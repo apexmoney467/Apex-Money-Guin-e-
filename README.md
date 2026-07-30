@@ -24,4 +24,4 @@ Send money instantly via Orange Money GN and MTN MoMo with low fees.
 - **Backend**: Python, Flask
 - **Frontend**: HTML, CSS, JavaScript
 - **Payment Gateway**: CinetPay API
-- **Mobile Money**: Orange Money GN,MT MoMo
+- **Mobile Money**:Orange Money GN,MT MoMo
