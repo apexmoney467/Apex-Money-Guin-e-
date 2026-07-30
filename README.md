@@ -1,4 +1,4 @@
-# APEX Money Guinée 🇬🇳
+## APEX Money Guinée 🇬🇳
 
 APEX Money Guinée is a mobile money transfer application built for Guinea. 
 Send money instantly via Orange Money GN and MTN MoMo with low fees.
@@ -24,4 +24,4 @@ Send money instantly via Orange Money GN and MTN MoMo with low fees.
 - **Backend**: Python, Flask
 - **Frontend**: HTML, CSS, JavaScript
 - **Payment Gateway**: CinetPay API
-- **Mobile Money**: Orange Money GN, MT
+- **Mobile Money**: Orange Money GN,MT MoMo
