@@ -314,11 +314,13 @@ def webhook():
         conn = sqlite3.connect('apex.db')
         c = conn.cursor()
         c.execute("INSERT OR IGNORE INTO users (phone) VALUES (?)", (phone,))
-        c.import os
+c.execute("INSERT OR IGNORE INTO users (phone) VALUES (?)", (phone,))
+
+import os
 import sqlite3
 from datetime import datetime
 
-ADMIN_PHONE = "224622924439 ,224666363078" # <-- CHANGE THIS TO YOUR REAL NUMBER
+ADMIN_PHONE = "224622924439" # <-- CHANGE THIS TO YOUR 1 REAL NUMBER ONLY
 FEE_PERCENT = 1.5 # 1.5% fee
 
 # CREATE ADMIN + TABLES
@@ -329,11 +331,50 @@ def init_db():
                  (phone TEXT PRIMARY KEY, balance REAL DEFAULT 0)''')
     c.execute('''CREATE TABLE IF NOT EXISTS transactions
                  (id TEXT PRIMARY KEY, phone TEXT, amount REAL, type TEXT, status TEXT, date TEXT)''')
-    # CREATE YOUR ADMIN ACCOUNT
     c.execute("INSERT OR IGNORE INTO users (phone, balance) VALUES (?, 0)", (ADMIN_PHONE,))
     conn.commit()
     conn.close()
 init_db()
+
+@app.route('/admin/balance', methods=['GET'])
+def admin_balance():
+    conn = sqlite3.connect('apex.db')
+    c = conn.cursor()
+    c.execute("SELECT balance FROM users WHERE phone =?", (ADMIN_PHONE,))
+    row = c.fetchone()
+    conn.close()
+    return jsonify({"admin_phone": ADMIN_PHONE, "balance": row[0] if row else 0})
+
+@app.route('/balance/<phone>', methods=['GET'])
+def balance(phone):
+    conn = sqlite3.connect('apex.db')
+    c = conn.cursor()
+    c.execute("SELECT balance FROM users WHERE phone =?", (phone,))
+    row = c.fetchone()
+    conn.close()
+    return jsonify({"phone": phone, "balance": row[0] if row else 0})
+
+@app.route('/webhook/cinetpay', methods=['POST'])
+def webhook():
+    data = request.json
+    if data['cpm_result'] == '00':
+        trans_id = data['cpm_trans_id']
+        amount = float(data['cpm_amount'])
+        phone = data['cpm_phone']
+        fee = round(amount * FEE_PERCENT / 100, 2)
+        user_amount = amount - fee
+        conn = sqlite3.connect('apex.db')
+        c = conn.cursor()
+        c.execute("INSERT OR IGNORE INTO users (phone) VALUES (?)", (phone,))
+        c.execute("UPDATE users SET balance = balance +? WHERE phone =?", (user_amount, phone))
+        c.execute("UPDATE users SET balance = balance +? WHERE phone =?", (fee, ADMIN_PHONE))
+        conn.commit()
+        conn.close()
+        print(f"PAID: {user_amount} GNF to {phone} | FEE: {fee} GNF to ADMIN")
+    return jsonify({"status": "ok"})        
+
+
+    
 
 # CHECK YOUR BALANCE
 @app.route('/admin/balance', methods=['GET'])
@@ -405,3 +446,65 @@ def webhook():
 if __name__ == "__main__": # THIS WAS ALREADY THERE
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+from flask import Flask, request, jsonify
+import sqlite3
+import requests
+import os
+from datetime import datetime
+
+app = Flask(__name__)
+
+# 1. YOUR EXISTING ROUTES GO HERE
+# like /create-payment, /balance etc
+
+# 2. PASTE THE ADMIN + WEBHOOK CODE HERE AT THE BOTTOM
+import sqlite3
+from datetime import datetime
+
+ADMIN_PHONE = "224622924439,224666363078" # <-- CHANGE THIS
+FEE_PERCENT = 1.5
+
+def init_db():
+    conn = sqlite3.connect('apex.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users
+                 (phone TEXT PRIMARY KEY, balance REAL DEFAULT 0)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS transactions
+                 (id TEXT PRIMARY KEY, phone TEXT, amount REAL, type TEXT, status TEXT, date TEXT)''')
+    c.execute("INSERT OR IGNORE INTO users (phone, balance) VALUES (?, 0)", (ADMIN_PHONE,))
+    conn.commit()
+    conn.close()
+init_db()
+
+@app.route('/admin/balance', methods=['GET'])
+def admin_balance():
+    conn = sqlite3.connect('apex.db')
+    c = conn.cursor()
+    c.execute("SELECT balance FROM users WHERE phone =?", (ADMIN_PHONE,))
+    row = c.fetchone()
+    conn.close()
+    return jsonify({"admin_phone": ADMIN_PHONE, "balance": row[0] if row else 0})
+
+@app.route('/webhook/cinetpay', methods=['POST'])
+def webhook():
+    data = request.json
+    if data['cpm_result'] == '00':
+        trans_id = data['cpm_trans_id']
+        amount = float(data['cpm_amount'])
+        phone = data['cpm_phone']
+
+        fee = round(amount * FEE_PERCENT / 100, 2)
+        user_amount = amount - fee
+
+        conn = sqlite3.connect('apex.db')
+        c = conn.cursor()
+        c.execute("INSERT OR IGNORE INTO users (phone) VALUES (?)", (phone,))
+        c.execute("UPDATE users SET balance = balance +? WHERE phone =?", (user_amount, phone))
+        c.execute("UPDATE users SET balance = balance +? WHERE phone =?", (fee, ADMIN_PHONE))
+        conn.commit()
+        conn.close()
+        print(f"PAID: {user_amount} GNF to {phone} | FEE: {fee} GNF to ADMIN")
+    return jsonify({"status": "ok"})
+
+if __name__ == "__main__":
+    app.run()
