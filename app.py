@@ -2,8 +2,8 @@
 from flask import Flask, jsonify, request
 import os
 import requests
-import uuid
-
+import uuid 
+import base64
 app = Flask(__name__)
 
 # KEYS - we'll add these in Render Environment
@@ -18,13 +18,160 @@ MTN_SUBSCRIPTION_KEY = os.environ.get("MTN_SUBSCRIPTION_KEY")
 
 @app.route("/")
 def home():
-    return jsonify({"message": "Apex Money Guinée API is running", "status": "success"})
+    return jsonify({"message": "Apex Money Guinée API is running", "status": "success
+
+
+
+
+# ========== 1. CINETPAY ==========
+@app.route("/cinetpay/init", methods=["POST"])
+def cinetpay_init():
+    data = request.json
+    amount = data.get("amount")
+    phone = data.get("phone")
+    transaction_id = data.get("transaction_id", str(uuid.uuid4()))
+
+    payload = {
+        "apikey": CINETPAY_APIKEY,
+        "site_id": CINETPAY_SITE_ID,
+        "transaction_id": transaction_id,
+        "amount": amount,
+        "currency": "GNF",
+        "description": "Apex Money Payment",
+        "return_url": "https://apex-money-guin-e.onrender.com/success",
+        "notify_url": "https://apex-money-guin-e.onrender.com/cinetpay/notify",
+        "customer_phone_number": phone,
+        "channels": "ALL"
+    }
+    
+    res = requests.post("https://api-checkout.cinetpay.com/v2/payment", json=payload)
+    return jsonify(res.json())
+
+@app.route("/cinetpay/notify", methods=["POST"])
+def cinetpay_notify():
+    data = request.json
+    print("CinetPay Notification:", data)
+    return jsonify({"status": "received"})
+
 
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
+### *STEP 3: ADD THIS AT THE VERY BOTTOM OF THE FILE*
+Scroll all the way down and paste:
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+Then `Commit changes` → `Add CinetPay endpoints`
+
+Reply `DONE STEP 2` when you finish 👇  
+Next I’ll give you STEP 3: Orange Money + MTN
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"})
+
+import uuid
+
+# ========== 1. CINETPAY ==========
+@app.route("/cinetpay/init", methods=["POST"])
+def cinetpay_init():
+    data = request.json
+    amount = data.get("amount")
+    phone = data.get("phone")
+    transaction_id = data.get("transaction_id", str(uuid.uuid4()))
+
+    payload = {
+        "apikey": CINETPAY_APIKEY,
+        "site_id": CINETPAY_SITE_ID,
+        "transaction_id": transaction_id,
+        "amount": amount,
+        "currency": "GNF",
+        "description": "Apex Money Payment",
+        "return_url": "https://apex-money-guin-e.onrender.com/success",
+        "notify_url": "https://apex-money-guin-e.onrender.com/cinetpay/notify",
+        "customer_phone_number": phone,
+        "channels": "ALL"
+    }
+    
+    res = requests.post("https://api-checkout.cinetpay.com/v2/payment", json=payload)
+    return jsonify(res.json())
+
+@app.route("/cinetpay/notify", methods=["POST"])
+def cinetpay_notify():
+    data = request.json
+    print("CinetPay Notification:", data)
+    return jsonify({"status": "received"})
 
 
+# ========== 2. ORANGE MONEY ==========
+def get_orange_token():
+    auth = base64.b64encode(f"{ORANGE_CLIENT_ID}:{ORANGE_CLIENT_SECRET}".encode()).decode()
+    headers = {"Authorization": f"Basic {auth}"}
+    res = requests.post(
+        "https://api.orange.com/oauth/v3/token",
+        headers=headers,
+        data={"grant_type": "client_credentials"}
+    )
+    return res.json().get("access_token")
+
+@app.route("/orange/pay", methods=["POST"])
+def orange_pay():
+    data = request.json
+    amount = data.get("amount")
+    phone = data.get("phone") # format: 2246XXXXXXXX
+    transaction_id = data.get("transaction_id", str(uuid.uuid4()))
+    
+    token = get_orange_token()
+    
+    payload = {
+        "amount": amount,
+        "currency": "GNF",
+        "orderId": transaction_id,
+        "payer": {"partyIdType": "MSISDN", "partyId": phone},
+        "payee": {"partyIdType": "MSISDN", "partyId": "2246YOUR_MERCHANT_NUMBER"},
+        "callbackUrl": "https://apex-money-guin-e.onrender.com/orange/notify"
+    }
+    
+    headers = {"Authorization": f"Bearer {token}"}
+    res = requests.post("https://api.orange.com/orange-money-webpay/v1/payments", json=payload, headers=headers)
+    return jsonify(res.json())
+
+@app.route("/orange/notify", methods=["POST"])
+def orange_notify():
+    data = request.json
+    print("Orange Notification:", data)
+    return jsonify({"status": "received"})
+
+
+# ========== 3. MTN MOBILE MONEY ==========
+@app.route("/mtn/pay", methods=["POST"])
+def mtn_pay():
+    data = request.json
+    amount = data.get("amount")
+    phone = data.get("phone") # format: 2246XXXXXXXX
+    transaction_id = data.get("transaction_id", str(uuid.uuid4()))
+    
+    headers = {
+        "Ocp-Apim-Subscription-Key": MTN_SUBSCRIPTION_KEY,
+        "X-Reference-Id": transaction_id,
+        "X-Target-Environment": "sandbox"
+    }
+    
+    payload = {"amount": amount, "currency": "GNF", "payer": {"partyIdType": "MSISDN", "partyId": phone}}
+    res = requests.post("https://sandbox.momodeveloper.mtn.com/collection/v1_0/requesttopay", json=payload, headers=headers)
+    
+    return jsonify({"status": "pending", "reference": transaction_id})
+
+@app.route("/mtn/notify", methods=["POST"])
+def mtn_notify():
+    data = request.json
+    print("MTN Notification:", data)
+    return jsonify({"status": "received"})
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
 # ========== 1. CINETPAY ==========
 @app.route("/cinetpay/init", methods=["POST"])
 def cinetpay_init():
@@ -60,16 +207,70 @@ def cinetpay_notify():
 # ========== 2. ORANGE MONEY ==========
 @app.route("/orange/pay", methods=["POST"])
 def orange_pay():
-    # We will fill this after CinetPay works
-    return jsonify({"status": "coming_soon", "provider": "Orange Money"})
+    data = request.json
+    amount = data.get("amount")
+    phone = data.get("phone")
+    transaction_id = data.get("transaction_id", str(uuid.uuid4()))
+
+    # 1. Get Orange token
+    auth_string = f"{ORANGE_CLIENT_ID}:{ORANGE_CLIENT_SECRET}"
+    auth_bytes = base64.b64encode(auth_string.encode()).decode()
+    
+    token_res = requests.post(
+        "https://api.orange.com/oauth/v3/token",
+        headers={"Authorization": f"Basic {auth_bytes}"},
+        data={"grant_type": "client_credentials"}
+    )
+    token = token_res.json().get("access_token")
+
+    # 2. Make payment
+    payload = {
+        "amount": amount,
+        "currency": "GNF",
+        "externalId": transaction_id,
+        "payee": {"partyIdType": "MSISDN", "partyId": phone}
+    }
+    
+    pay_res = requests.post(
+        "https://api.orange.com/orange-money-webpay/dev/v1/transactions",
+        headers={"Authorization": f"Bearer {token}"},
+        json=payload
+    )
+    return jsonify(pay_res.json())
 
 
 # ========== 3. MTN MOBILE MONEY ==========
 @app.route("/mtn/pay", methods=["POST"])
 def mtn_pay():
-    # We will fill this after CinetPay works
-    return jsonify({"status": "coming_soon", "provider": "MTN MoMo"})
+    data = request.json
+    amount = data.get("amount")
+    phone = data.get("phone")
+    transaction_id = data.get("transaction_id", str(uuid.uuid4()))
+
+    headers = {
+        "X-Reference-Id": transaction_id,
+        "Ocp-Apim-Subscription-Key": MTN_SUBSCRIPTION_KEY,
+        "X-Target-Environment": "sandbox",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "amount": str(amount),
+        "currency": "GNF",
+        "externalId": transaction_id,
+        "payer": {"partyIdType": "MSISDN", "partyId": phone},
+        "payerMessage": "Apex Money Payment",
+        "payeeNote": "Apex Money Payment"
+    }
+    
+    res = requests.post(
+        "https://sandbox.momodeveloper.mtn.com/collection/v1_0/requesttopay",
+        headers=headers,
+        json=payload
+    )
+    return jsonify({"status": "sent", "reference": transaction_id})
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
