@@ -274,3 +274,55 @@ def mtn_pay():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+# ADD THIS WHOLE BLOCK HERE - BEFORE LINE 274
+
+import os
+import sqlite3
+from datetime import datetime
+
+# 1. DATABASE SETUP
+def init_db():
+    conn = sqlite3.connect('apex.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users
+                 (phone TEXT PRIMARY KEY, balance REAL DEFAULT 0)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS transactions
+                 (id TEXT PRIMARY KEY, phone TEXT, amount REAL, type TEXT, status TEXT, date TEXT)''')
+    conn.commit()
+    conn.close()
+init_db()
+
+# 2. CHECK BALANCE ENDPOINT
+@app.route('/balance/<phone>', methods=['GET'])
+def balance(phone):
+    conn = sqlite3.connect('apex.db')
+    c = conn.cursor()
+    c.execute("SELECT balance FROM users WHERE phone =?", (phone,))
+    row = c.fetchone()
+    conn.close()
+    return jsonify({"phone": phone, "balance": row[0] if row else 0})
+
+# 3. NEW WEBHOOK FOR CINETPAY + WALLET
+@app.route('/webhook/cinetpay', methods=['POST'])
+def webhook():
+    data = request.json
+    if data['cpm_result'] == '00': # 00 = Payment Success
+        trans_id = data['cpm_trans_id']
+        amount = float(data['cpm_amount'])
+        phone = data['cpm_phone']
+        
+        conn = sqlite3.connect('apex.db')
+        c = conn.cursor()
+        c.execute("INSERT OR IGNORE INTO users (phone) VALUES (?)", (phone,))
+        c.execute("UPDATE users SET balance = balance +? WHERE phone =?", (amount, phone))
+        c.execute("INSERT INTO transactions VALUES (?,?,?, 'TOPUP', 'SUCCESS',?)", 
+                  (trans_id, phone, amount, datetime.now()))
+        conn.commit()
+        conn.close()
+        print(f"PAID: {trans_id} - {amount} GNF to {phone}")
+    return jsonify({"status": "ok"})
+
+
+if __name__ == "__main__": # THIS WAS ALREADY THERE
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
