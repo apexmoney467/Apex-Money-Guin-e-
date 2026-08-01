@@ -118,7 +118,7 @@ def get_orange_token():
 def orange_pay():
     data = request.json
     amount = data.get("amount")
-    phone = data.get("phone") # format: 2246XXXXXXXX
+    phone = data.get("phone") # format: 224622924439,224666363078
     transaction_id = data.get("transaction_id", str(uuid.uuid4()))
     
     token = get_orange_token()
@@ -148,7 +148,7 @@ def orange_notify():
 def mtn_pay():
     data = request.json
     amount = data.get("amount")
-    phone = data.get("phone") # format: 2246XXXXXXXX
+    phone = data.get("phone") # format: 224622924439,224666363078
     transaction_id = data.get("transaction_id", str(uuid.uuid4()))
     
     headers = {
@@ -314,7 +314,71 @@ def webhook():
         conn = sqlite3.connect('apex.db')
         c = conn.cursor()
         c.execute("INSERT OR IGNORE INTO users (phone) VALUES (?)", (phone,))
-        c.execute("UPDATE users SET balance = balance +? WHERE phone =?", (amount, phone))
+        c.import os
+import sqlite3
+from datetime import datetime
+
+ADMIN_PHONE = "224622924439 ,224666363078" # <-- CHANGE THIS TO YOUR REAL NUMBER
+FEE_PERCENT = 1.5 # 1.5% fee
+
+# CREATE ADMIN + TABLES
+def init_db():
+    conn = sqlite3.connect('apex.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users
+                 (phone TEXT PRIMARY KEY, balance REAL DEFAULT 0)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS transactions
+                 (id TEXT PRIMARY KEY, phone TEXT, amount REAL, type TEXT, status TEXT, date TEXT)''')
+    # CREATE YOUR ADMIN ACCOUNT
+    c.execute("INSERT OR IGNORE INTO users (phone, balance) VALUES (?, 0)", (ADMIN_PHONE,))
+    conn.commit()
+    conn.close()
+init_db()
+
+# CHECK YOUR BALANCE
+@app.route('/admin/balance', methods=['GET'])
+def admin_balance():
+    conn = sqlite3.connect('apex.db')
+    c = conn.cursor()
+    c.execute("SELECT balance FROM users WHERE phone =?", (ADMIN_PHONE,))
+    row = c.fetchone()
+    conn.close()
+    return jsonify({"admin_phone": ADMIN_PHONE, "balance": row[0] if row else 0})
+
+# CHECK USER BALANCE
+@app.route('/balance/<phone>', methods=['GET'])
+def balance(phone):
+    conn = sqlite3.connect('apex.db')
+    c = conn.cursor()
+    c.execute("SELECT balance FROM users WHERE phone =?", (phone,))
+    row = c.fetchone()
+    conn.close()
+    return jsonify({"phone": phone, "balance": row[0] if row else 0})
+
+# WEBHOOK - ADDS MONEY TO USER + FEE TO YOU
+@app.route('/webhook/cinetpay', methods=['POST'])
+def webhook():
+    data = request.json
+    if data['cpm_result'] == '00':
+        trans_id = data['cpm_trans_id']
+        amount = float(data['cpm_amount'])
+        phone = data['cpm_phone']
+
+        fee = round(amount * FEE_PERCENT / 100, 2)
+        user_amount = amount - fee
+
+        conn = sqlite3.connect('apex.db')
+        c = conn.cursor()
+        # 1. Give money to user
+        c.execute("INSERT OR IGNORE INTO users (phone) VALUES (?)", (phone,))
+        c.execute("UPDATE users SET balance = balance +? WHERE phone =?", (user_amount, phone))
+        # 2. Give FEE to YOU
+        c.execute("UPDATE users SET balance = balance +? WHERE phone =?", (fee, ADMIN_PHONE))
+
+        conn.commit()
+        conn.close()
+        print(f"PAID: {user_amount} GNF to {phone} | FEE: {fee} GNF to ADMIN")
+    return jsonify({"status": "ok"})execute("UPDATE users SET balance = balance +? WHERE phone =?", (amount, phone))
         c.execute("INSERT INTO transactions VALUES (?,?,?, 'TOPUP', 'SUCCESS',?)", 
                   (trans_id, phone, amount, datetime.now()))
         conn.commit()
@@ -322,7 +386,22 @@ def webhook():
         print(f"PAID: {trans_id} - {amount} GNF to {phone}")
     return jsonify({"status": "ok"})
 
-
+@app.route('/webhook/cinetpay', methods=['POST'])
+def webhook():
+    data = request.json
+    if data['cpm_result'] == '00': # 00 = success
+        trans_id = data['cpm_trans_id']
+        amount = float(data['cpm_amount'])
+        phone = data['cpm_phone']
+        
+        # Add money to user wallet + fee to you
+        conn = sqlite3.connect('apex.db')
+        c = conn.cursor()
+        c.execute("INSERT OR IGNORE INTO users (phone) VALUES (?)", (phone,))
+        c.execute("UPDATE users SET balance = balance +? WHERE phone =?", (amount, phone))
+        conn.commit()
+        conn.close()
+    return jsonify({"status": "ok"})
 if __name__ == "__main__": # THIS WAS ALREADY THERE
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
