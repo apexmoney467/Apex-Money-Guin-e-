@@ -1,4 +1,6 @@
-
+@app.route("/")
+def home():
+    return "APEX Money API is Running ✅"
 from flask import Flask, jsonify, request
 import os
 import requests
