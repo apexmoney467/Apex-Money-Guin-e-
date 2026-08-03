@@ -18,11 +18,7 @@ ORANGE_CLIENT_SECRET = os.environ.get("ORANGE_CLIENT_SECRET")
 MTN_API_KEY = os.environ.get("MTN_API_KEY")
 MTN_SUBSCRIPTION_KEY = os.environ.get("MTN_SUBSCRIPTION_KEY")
 
-@app.route("/")
-def home():
-    from flask import Flask, jsonify
 
-app = Flask(__name__)
 
 @app.route("/")
 def home():
