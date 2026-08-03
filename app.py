@@ -20,7 +20,16 @@ MTN_SUBSCRIPTION_KEY = os.environ.get("MTN_SUBSCRIPTION_KEY")
 
 @app.route("/")
 def home():
-    return jsonify({"message": "Apex Money Guinée API is running", "status": "success
+    from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return jsonify({"message": "Apex Money Guinée API is running"})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
 
 
 
