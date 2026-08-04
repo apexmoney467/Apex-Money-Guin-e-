@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, return render_template('index.html')
 import os
 import uuid
 from dotenv import load_dotenv
@@ -8,10 +8,9 @@ app = Flask(__name__)
 
 CINETPAY_APIKEY = os.getenv("CINETPAY_APIKEY")
 CINETPAY_SITE_ID = os.getenv("CINETPAY_SITE_ID")
-
 @app.route("/")
 def home():
-    return jsonify({"message": "Apex Money Guinée API is running"})
+    return render_template('index.html')
 
 @app.route("/health")
 def health():
