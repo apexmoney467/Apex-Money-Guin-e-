@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, return render_template('index.html')
+from flask import Flask, jsonify, request
 import os
 import uuid
 from dotenv import load_dotenv
