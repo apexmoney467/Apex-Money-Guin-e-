@@ -47,8 +47,17 @@ def cinetpay_init():
 
         # Call CinetPay API
         response = requests.post("https://api.cinetpay.com/v1/payment", json=payload)
-        result = response.json()
-
+        
+        # ADD THIS: Print what CinetPay returns
+        print("CinetPay Status:", response.status_code)
+        print("CinetPay Response:", response.text)
+        
+        # Try to parse JSON, but don't crash if it fails
+        try:
+            result = response.json()
+        except:
+            result = {"error": "CinetPay did not return JSON", "raw": response.text}
+            
         return jsonify(result), response.status_code
 
     except Exception as e:
