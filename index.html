@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Money Guinée - Paiement CinetPay</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-green-50 to-yellow-50 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border-t-4 border-green-600">
+    
+    <div class="text-center mb-6">
+      <img src="IMG-20260805-WA7441.jpg" alt="Apex Money Guinée" class="w-32 h-40 mx-auto mb-3 object-contain">
+      <p class="text-gray-500">Paiement Sécurisé Mobile Money</p>
+    </div>
+
+    <div class="bg-green-50 border-l-4 border-yellow-500 p-4 rounded-lg mb-6 text-center">
+      <p class="text-sm text-gray-600">Montant à Payer</p>
+      <p class="text-4xl font-bold text-green-700">1000 GNF</p>
+    </div>
+
+    <button onclick="payNow()" id="payBtn" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-lg font-bold text-lg transition shadow-lg">
+      Payer Maintenant avec CinetPay
+    </button>
+
+    <p id="status" class="text-center text-sm text-red-500 mt-4"></p>
+    
+    <p class="text-xs text-center text-gray-400 mt-6">Apex Money Guinée © 2026</p>
+  </div>
+
+  <script>
+    async function payNow() {
+      document.getElementById('payBtn').innerText = "Traitement...";
+      document.getElementById('payBtn').disabled = true;
+      try{
+        const res = await fetch("https://apex-money-guin-e-1.onrender.com/cinetpay/init", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({transaction_id: "WEB_" + Date.now(), amount: 1000, currency: "GNF", description: "Paiement Apex Money", customer_name: "Client Web", customer_email: "client@apex.com", customer_phone: "224627 52 10 83"})});
+        const data = await res.json();
+        if(data.data && data.data.payment_url) {window.location.href = data.data.payment_url;} else {document.getElementById('status').innerText = "Erreur: " + (data.message || "Echec"); document.getElementById('payBtn').innerText = "Réessayer"; document.getElementById('payBtn').disabled = false;}
+      }catch(e){document.getElementById('status').innerText = "Erreur réseau"; document.getElementById('payBtn').innerText = "Réessayer"; document.getElementById('payBtn').disabled = false;}
+    }
+  </script>
+</body>
+</html>
