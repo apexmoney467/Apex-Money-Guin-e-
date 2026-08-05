@@ -1,5 +1,4 @@
-
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify, render_template
 import os
 import uuid
 import requests
