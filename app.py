@@ -17,8 +17,8 @@ def home():
 
 @app.route("/health")
 def health():
-    return jsonify({"status": "ok"})
-return jsonify({"message": "Apex Money Guinee API is running", "status": "success"})
+    return jsonify({"status": "ok"})  # <- only this return
+
 @app.route("/cinetpay/init", methods=["POST"])
 def cinetpay_init():
     try:
