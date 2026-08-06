@@ -5,16 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apex Money GN</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style> .btn-orange { background: linear-gradient(135deg, #FF7F00 0%, #FF5500 100%); } </style>
 </head>
-<body class="bg-gray-100">
-    <div id="app">Chargement...</div>
+<body class="bg-gradient-to-br from-orange-400 to-red-500 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+      <h1 class="text-3xl font-bold text-orange-600 text-center mb-2">💰 Apex Money GN</h1>
+      <p class="text-center text-gray-600 mb-6">Première connexion: Créez le compte Owner</p>
+      
+      <input id="email" type="email" placeholder="Email" class="border w-full rounded-lg p-3 mb-3">
+      <input id="password" type="password" placeholder="Mot de passe 6+ caractères" class="border w-full rounded-lg p-3 mb-3">
+      <input id="nom" placeholder="Votre Nom" class="border w-full rounded-lg p-3 mb-3">
+      
+      <button onclick="registerOwner()" class="bg-orange-500 hover:bg-orange-600 text-white w-full py-3 rounded-lg font-bold mb-3">Créer Compte Owner</button>
+      <button onclick="login()" class="bg-gray-700 hover:bg-gray-800 text-white w-full py-3 rounded-lg mb-3">Se Connecter</button>
+      
+      <p id="error" class="text-red-500 text-center text-sm mt-3"></p>
+    </div>
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-      import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDyqB601iwygUcojI2jl7bt7E276y2jffQ",
@@ -28,73 +38,37 @@
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
       const db = getFirestore(app);
-      let currentUser = null;
-      let userData = {role: 'owner', nom: 'Owner', solde: 0}; // DEFAULT
 
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          currentUser = user;
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          if(userDoc.exists()) { userData = userDoc.data(); }
-          showMainApp();
-        } else {
-          showLogin();
-        }
-      });
-
-      function showLogin() {
-        document.getElementById('app').innerHTML = `
-          <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-400 to-red-500 p-4">
-            <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-              <h1 class="text-3xl font-bold text-orange-600 text-center mb-2">💰 Apex Money GN</h1>
-              <p class="text-center mb-6">Première connexion: Créez le compte Owner</p>
-              <input id="email" type="email" placeholder="Email" class="border w-full rounded-lg p-3 mb-3">
-              <input id="password" type="password" placeholder="Mot de passe" class="border w-full rounded-lg p-3 mb-3">
-              <input id="nom" placeholder="Votre Nom" class="border w-full rounded-lg p-3 mb-3">
-              <button onclick="registerOwner()" class="btn-orange text-white w-full py-3 rounded-lg font-bold mb-3">Créer Compte Owner</button>
-              <button onclick="login()" class="bg-gray-700 text-white w-full py-3 rounded-lg">Se Connecter</button>
-            </div>
-          </div>
-        `;
-      }
-      
       window.registerOwner = async () => {
-        const userCred = await createUserWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
-        await setDoc(doc(db, "users", userCred.user.uid), { 
-          nom: document.getElementById('nom').value, 
-          email: document.getElementById('email').value, 
-          role: 'owner', 
-          solde: 1000000 // Start with 1M GNF
-        });
-        alert("Compte Owner créé!");
+        document.getElementById('error').innerText = "Création en cours...";
+        try {
+          const email = document.getElementById('email').value;
+          const pass = document.getElementById('password').value;
+          const nom = document.getElementById('nom').value;
+          
+          const userCred = await createUserWithEmailAndPassword(auth, email, pass);
+          await setDoc(doc(db, "clients", userCred.user.uid), { 
+            nom: nom, 
+            email: email, 
+            role: 'owner', 
+            montant: 1000000,
+            taux: 10,
+            dateCreation: new Date()
+          });
+          document.getElementById('error').innerText = "✅ Compte Owner créé! Rechargez la page.";
+        } catch (error) {
+          document.getElementById('error').innerText = "❌ Erreur: " + error.message;
+        }
       }
-      
-      window.login = async () => { 
-        await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value); 
-      }
-      window.logout = () => signOut(auth);
 
-      function showMainApp() {
-        document.getElementById('app').innerHTML = `
-          <div class="flex">
-            <div class="bg-orange-600 text-white w-64 min-h-screen p-4">
-              <h2 class="text-2xl font-bold mb-8">💰 Apex Money</h2>
-              <p class="mb-6">Bonjour ${userData.nom}</p>
-              <ul class="space-y-3">
-                <li><a href="#" onclick="alert('Dashboard')"><i class="fa fa-home mr-3"></i>Accueil</a></li>
-                <li><a href="#" onclick="logout()" class="text-red-300"><i class="fa fa-sign-out mr-3"></i>Déconnexion</a></li>
-              </ul>
-            </div>
-            <div class="flex-1 p-6">
-              <h1 class="text-3xl font-bold mb-4">Tableau de Bord</h1>
-              <div class="bg-orange-500 text-white rounded-2xl p-6">
-                <p>Solde Disponible</p>
-                <p class="text-4xl font-bold">${userData.solde.toLocaleString()} GNF</p>
-              </div>
-            </div>
-          </div>
-        `;
+      window.login = async () => { 
+        try {
+          await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value); 
+          document.getElementById('error').innerText = "✅ Connexion réussie!";
+        } catch(error) {
+          document.getElementById('error').innerText = "❌ Erreur: " + error.message;
+        }
       }
     </script>
 </body>
-    </html>
+</html>
