@@ -1,227 +1,101 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Apex Money Guinée 🇬🇳</title>
-<style>
-body { font-family: Arial; background: #f5f5f5; margin: 0; padding: 10px; }
-.container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
-h1 { color: #009639; text-align: center; font-size: 20px; }
-input, button, select { width: 100%; padding: 10px; margin: 6px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
-.btn-green { background: #009639; color: white; border: none; font-weight: bold; cursor: pointer; }
-.btn-red { background: #CE1126; color: white; border: none; font-weight: bold; cursor: pointer; }
-.btn-blue { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; }
-.hidden { display: none; }
-.badge { background: #009639; color: white; padding: 3px 8px; border-radius: 20px; font-size: 12px; }
-.wallet { background: #f0fff4; padding: 10px; border-radius: 8px; text-align: center; }
-.tx { border-bottom: 1px solid #eee; padding: 8px 0; font-size: 14px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Money GN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card { backdrop-filter: blur(10px); background: rgba(255,255,255,0.9); }
+    </style>
 </head>
-<body>
+<body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen p-4">
+    <div class="container mx-auto max-w-4xl">
+        <!-- Header -->
+        <div class="card rounded-2xl shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold text-purple-700">💰 Apex Money GN</h1>
+            <p class="text-gray-600">Sauvegarde automatique dans le cloud</p>
+        </div>
 
-<!-- LOGIN / REGISTER -->
-<div id="auth-screen" class="container">
-<h1>💚 Apex Money</h1>
-<div style="display:flex; gap:10px;">
-<button class="btn-green" onclick="showTab('login')">Connexion</button>
-<button class="btn-red" onclick="showTab('register')">Inscription</button>
-</div>
-<div id="login">
-<input type="tel" id="login-phone" placeholder="Numéro: +224...">
-<input type="password" id="login-pass" placeholder="Mot de passe">
-<button class="btn-green" onclick="login()">Se Connecter</button>
-</div>
-<div id="register" class="hidden">
-<input type="text" id="reg-name" placeholder="Nom Complet">
-<input type="tel" id="reg-phone" placeholder="Numéro: +224...">
-<input type="password" id="reg-pass" placeholder="Créer Mot de passe">
-<button class="btn-red" onclick="register('client')">Créer Compte Client</button>
-</div>
-</div>
+        <!-- Add Client Form -->
+        <div class="card rounded-2xl shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">➕ Nouveau Client</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input id="nom" type="text" placeholder="Nom du client" class="border rounded-lg p-3">
+                <input id="montant" type="number" placeholder="Montant Prêt GNF" class="border rounded-lg p-3">
+                <input id="taux" type="number" placeholder="Taux % par mois" class="border rounded-lg p-3">
+            </div>
+            <button onclick="addClient()" class="btn-primary text-white font-bold py-3 px-6 rounded-lg mt-4 w-full">
+                Enregistrer
+            </button>
+        </div>
 
-<!-- OWNER PANEL -->
-<div id="owner-panel" class="container hidden">
-<h1>👑 Portail Owner</h1>
-<p>ID: <b id="owner-id"></b> | <span class="badge">OWNER</span></p>
-<h3>Créer un Utilisateur</h3>
-<input type="text" id="new-name" placeholder="Nom">
-<input type="tel" id="new-phone" placeholder="Numéro">
-<select id="new-role"><option value="client">Client</option><option value="agent">Agent</option><option value="admin">Admin</option></select>
-<button class="btn-blue" onclick="createUser()">Créer</button>
+        <!-- Clients List -->
+        <div class="card rounded-2xl shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">📋 Liste des Clients</h2>
+            <div id="clientsList" class="space-y-3">Chargement...</div>
+        </div>
+    </div>
 
-<h3>Ajouter de l'argent</h3>
-<input type="tel" id="add-phone" placeholder="Numéro du client">
-<input type="number" id="add-amount" placeholder="Montant GNF">
-<button class="btn-green" onclick="addMoney()">Ajouter Solde</button>
+    <!-- FIREBASE SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<h3>Toutes les Transactions</h3>
-<div id="all-tx"></div>
-<button class="btn-red" onclick="logout()">Déconnexion</button>
-</div>
+      // YOUR FIREBASE CONFIG
+      const firebaseConfig = {
+        apiKey: "AIzaSyDyqB601iwygUcojI2jl7bt7E276y2jffQ",
+        authDomain: "apex-money-gn.firebaseapp.com",
+        projectId: "apex-money-gn",
+        storageBucket: "apex-money-gn.firebasestorage.app",
+        messagingSenderId: "252239353273",
+        appId: "1:252239353273:web:c5cb04b6287ca398fe5268"
+      };
 
-<!-- AGENT PANEL -->
-<div id="agent-panel" class="container hidden">
-<h1>🟢 Portail Agent</h1>
-<p>ID: <b id="agent-id"></b> | <span class="badge">AGENT</span></p>
-<h3>Retrait pour Client</h3>
-<input type="tel" id="retrait-phone" placeholder="Numéro Client">
-<input type="number" id="retrait-amount" placeholder="Montant GNF">
-<button class="btn-red" onclick="retrait()">Faire Retrait</button>
-<button class="btn-red" onclick="logout()">Déconnexion</button>
-</div>
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
 
-<!-- CLIENT DASHBOARD -->
-<div id="client-panel" class="container hidden">
-<h1>💚 Apex Money</h1>
-<p>ID: <b id="client-id"></b> | <span class="badge" id="client-role"></span></p>
-<div class="wallet">
-<h3>Solde: <span id="balance">0</span> GNF</h3>
-</div>
-<h3>Envoyer de l'argent</h3>
-<input type="tel" id="send-phone" placeholder="Numéro du bénéficiaire">
-<input type="number" id="send-amount" placeholder="Montant GNF">
-<button class="btn-green" onclick="sendMoney()">Envoyer</button>
+      // ADD CLIENT
+      window.addClient = async function() {
+        const nom = document.getElementById('nom').value;
+        const montant = document.getElementById('montant').value;
+        const taux = document.getElementById('taux').value;
+        
+        if(!nom || !montant || !taux) { alert("Remplissez tous les champs"); return; }
 
-<h3>Mes Transactions</h3>
-<div id="my-tx"></div>
-<button class="btn-red" onclick="logout()">Déconnexion</button>
-</div>
+        await addDoc(collection(db, "clients"), {
+          nom: nom,
+          montant: Number(montant),
+          taux: Number(taux),
+          date: new Date()
+        });
 
-<script>
-let users = JSON.parse(localStorage.getItem('apex_users')) || [];
-let transactions = JSON.parse(localStorage.getItem('apex_tx')) || [];
-let currentUser = JSON.parse(localStorage.getItem('apex_current')) || null;
+        document.getElementById('nom').value = '';
+        document.getElementById('montant').value = '';
+        document.getElementById('taux').value = '';
+        alert("Client enregistré avec succès!");
+      }
 
-// Create Owner on first run
-if(users.length == 0) {
-users.push({id: 'OWN-001', name: 'Owner', phone: '+224000000000', pass: '1234', role: 'owner', balance: 0});
-save();
-}
-
-window.onload = function() { if(currentUser) { showPanel(currentUser.role); } }
-
-function save() {
-localStorage.setItem('apex_users', JSON.stringify(users));
-localStorage.setItem('apex_tx', JSON.stringify(transactions));
-localStorage.setItem('apex_current', JSON.stringify(currentUser));
-}
-
-function showTab(tab) {
-document.getElementById('login').classList.add('hidden');
-document.getElementById('register').classList.add('hidden');
-document.getElementById(tab).classList.remove('hidden');
-}
-
-function generateID(role) {
-let prefix = role == 'owner' ? 'OWN' : role == 'admin' ? 'ADM' : role == 'agent' ? 'AGT' : 'CLT';
-return prefix + '-' + Math.floor(1000 + Math.random() * 9000);
-}
-
-function register(role) {
-let name = document.getElementById('reg-name').value;
-let phone = document.getElementById('reg-phone').value;
-let pass = document.getElementById('reg-pass').value;
-let id = generateID(role);
-let newUser = {id, name, phone, pass, role, balance: 0};
-users.push(newUser);
-currentUser = newUser;
-save();
-showPanel(role);
-}
-
-function login() {
-let phone = document.getElementById('login-phone').value;
-let pass = document.getElementById('login-pass').value;
-let user = users.find(u => u.phone == phone && u.pass == pass);
-if(user) { currentUser = user; save(); showPanel(user.role); }
-else { alert('Identifiants incorrects'); }
-}
-
-function showPanel(role) {
-document.getElementById('auth-screen').classList.add('hidden');
-document.getElementById('owner-panel').classList.add('hidden');
-document.getElementById('agent-panel').classList.add('hidden');
-document.getElementById('client-panel').classList.add('hidden');
-
-if(role == 'owner') {
-document.getElementById('owner-panel').classList.remove('hidden');
-document.getElementById('owner-id').innerText = currentUser.id;
-loadAllTx();
-}
-if(role == 'agent') {
-document.getElementById('agent-panel').classList.remove('hidden');
-document.getElementById('agent-id').innerText = currentUser.id;
-}
-if(role == 'client' || role == 'admin') {
-document.getElementById('client-panel').classList.remove('hidden');
-document.getElementById('client-id').innerText = currentUser.id;
-document.getElementById('client-role').innerText = role.toUpperCase();
-document.getElementById('balance').innerText = currentUser.balance;
-loadMyTx();
-}
-}
-
-function createUser() {
-let name = document.getElementById('new-name').value;
-let phone = document.getElementById('new-phone').value;
-let role = document.getElementById('new-role').value;
-let id = generateID(role);
-users.push({id, name, phone, pass: '1234', role, balance: 0});
-alert('Créé! ID: ' + id + ' | Pass: 1234');
-save();
-}
-
-function addMoney() {
-let phone = document.getElementById('add-phone').value;
-let amount = parseFloat(document.getElementById('add-amount').value);
-let user = users.find(u => u.phone == phone);
-if(user) { user.balance += amount; addTx('OWNER', user.phone, amount, 'DEPOSIT'); save(); alert('Solde ajouté'); }
-}
-
-function sendMoney() {
-let to = document.getElementById('send-phone').value;
-let amount = parseFloat(document.getElementById('send-amount').value);
-let receiver = users.find(u => u.phone == to);
-if(currentUser.balance >= amount && receiver) {
-currentUser.balance -= amount; receiver.balance += amount;
-addTx(currentUser.phone, to, amount, 'SEND');
-save(); showPanel('client'); alert('Envoyé!');
-}
-}
-
-function retrait() {
-let phone = document.getElementById('retrait-phone').value;
-let amount = parseFloat(document.getElementById('retrait-amount').value);
-let user = users.find(u => u.phone == phone);
-if(user && user.balance >= amount) {
-user.balance -= amount; addTx(phone, 'AGENT', amount, 'WITHDRAW');
-save(); alert('Retrait fait');
-}
-}
-
-function addTx(from, to, amount, type) {
-transactions.push({id: 'TX'+Date.now(), from, to, amount, type, date: new Date().toLocaleString()});
-}
-
-function loadMyTx() {
-let myTx = transactions.filter(t => t.from == currentUser.phone || t.to == currentUser.phone);
-document.getElementById('my-tx').innerHTML = myTx.map(t => `<div class="tx">${t.type}: ${t.amount} GNF<br>${t.date}</div>`).join('');
-}
-
-function loadAllTx() {
-document.getElementById('all-tx').innerHTML = transactions.map(t => `<div class="tx">${t.type}: ${t.amount} GNF<br>De: ${t.from} → A: ${t.to}<br>${t.date}</div>`).join('');
-}
-
-function logout() { currentUser = null; save(); location.reload(); }
-</script>
+      // SHOW CLIENTS LIVE FROM FIREBASE
+      const q = query(collection(db, "clients"), orderBy("date", "desc"));
+      onSnapshot(q, (snapshot) => {
+        let html = '';
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          html += `
+            <div class="border-b border-purple-100 pb-3 fade-in">
+              <p class="font-bold text-lg">${data.nom}</p>
+              <p>Prêt: ${data.montant.toLocaleString()} GNF</p>
+              <p>Taux: ${data.taux}% / mois</p>
+            </div>
+          `;
+        });
+        document.getElementById('clientsList').innerHTML = html || "<p>Aucun client. Ajoutez-en un!</p>";
+      });
+    </script>
 </body>
   </html>
-
-<h3>Choisir le système</h3>
-<select id="system">
-<option value="Orange Money">Orange Money</option>
-<option value="Wave">Wave</option>
-<option value="MTN Mobile Money">MTN Mobile Money</option>
-<option value="Solde Apex">Solde Apex Money</option>
-</select>
