@@ -63,3 +63,119 @@ async function pay() {
 </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apex Money Guinée</title>
+<style>
+body { font-family: Arial; background: #f5f5f5; margin: 0; padding: 20px; }
+.container { max-width: 450px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+h1 { color: #009639; text-align: center; }
+input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+button { background: #009639; color: white; border: none; font-weight: bold; cursor: pointer; }
+button:hover { background: #007a2f; }
+.tab { display: flex; gap: 10px; }
+.tab button { flex: 1; background: #CE1126; }
+.tab button.active { background: #009639; }
+.hidden { display: none; }
+.fee { color: #CE1126; font-weight: bold; }
+.header { display: flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div id="auth-screen">
+<h1>💚 Apex Money</h1>
+<div class="tab">
+<button id="btn-login" class="active" onclick="showTab('login')">Connexion</button>
+<button id="btn-register" onclick="showTab('register')">Inscription</button>
+</div>
+<div id="login">
+<input type="tel" id="login-phone" placeholder="Numéro: +224...">
+<input type="password" id="login-pass" placeholder="Mot de passe">
+<button onclick="login()">Se Connecter</button>
+</div>
+<div id="register" class="hidden">
+<input type="text" id="reg-name" placeholder="Nom Complet">
+<input type="tel" id="reg-phone" placeholder="Numéro: +224...">
+<input type="password" id="reg-pass" placeholder="Créer Mot de passe">
+<button onclick="register()">Créer Compte</button>
+</div>
+</div>
+
+<div id="app-screen" class="hidden">
+<div class="header">
+<h1>💚 Apex Money</h1>
+<button onclick="logout()" style="width: auto; padding: 8px 12px; background: #ccc; color: black;">Déconnexion</button>
+</div>
+<p>Bienvenue <b id="user-name"></b> 👋</p>
+<h3>Envoyer de l'argent</h3>
+<input type="number" id="amount" placeholder="Montant à envoyer GNF" oninput="calcFee()">
+<p>Frais: <span class="fee" id="fee">0</span> GNF</p>
+<p>Total à payer: <span class="fee" id="total">0</span> GNF</p>
+<input type="tel" id="receiver" placeholder="Numéro du bénéficiaire">
+<button onclick="pay()">Payer Maintenant</button>
+<hr>
+<h3>Mon Compte</h3>
+<p><b>Numéro:</b> <span id="user-phone"></span></p>
+<p style="color: #888; font-size: 12px;">En attente de l'API CinetPay</p>
+</div>
+
+</div>
+
+<script>
+window.onload = function() {
+let user = JSON.parse(localStorage.getItem('user'));
+if(user) { goToDashboard(user); }
+}
+function showTab(tab) {
+document.getElementById('login').classList.add('hidden');
+document.getElementById('register').classList.add('hidden');
+document.getElementById(tab).classList.remove('hidden');
+document.getElementById('btn-login').classList.remove('active');
+document.getElementById('btn-register').classList.remove('active');
+document.getElementById('btn-' + tab).classList.add('active');
+}
+function register() {
+let name = document.getElementById('reg-name').value;
+let phone = document.getElementById('reg-phone').value;
+let pass = document.getElementById('reg-pass').value;
+if(!name || !phone || !pass) { alert('Remplissez tous les champs'); return; }
+let user = {name, phone, pass};
+localStorage.setItem('user', JSON.stringify(user));
+goToDashboard(user);
+}
+function login() {
+let phone = document.getElementById('login-phone').value;
+let pass = document.getElementById('login-pass').value;
+let user = JSON.parse(localStorage.getItem('user'));
+if(user && user.phone == phone && user.pass == pass) {
+goToDashboard(user);
+} else { alert('Numéro ou mot de passe incorrect'); }
+}
+function goToDashboard(user) {
+document.getElementById('auth-screen').classList.add('hidden');
+document.getElementById('app-screen').classList.remove('hidden');
+document.getElementById('user-name').innerText = user.name;
+document.getElementById('user-phone').innerText = user.phone;
+}
+function logout() {
+localStorage.removeItem('user');
+document.getElementById('auth-screen').classList.remove('hidden');
+document.getElementById('app-screen').classList.add('hidden');
+}
+function calcFee() {
+let amount = parseFloat(document.getElementById('amount').value) || 0;
+let fee = amount <= 20000 ? amount * 0.05 : amount * 0.02;
+document.getElementById('fee').innerText = fee.toFixed(0);
+document.getElementById('total').innerText = (amount + fee).toFixed(0);
+}
+function pay() {
+alert('Bientôt disponible! En attente API CinetPay');
+}
+</script>
+</body>
+  </html>
