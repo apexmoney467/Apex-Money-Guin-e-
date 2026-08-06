@@ -87,12 +87,19 @@
         snapshot.forEach((doc) => {
           const data = doc.data();
           html += `
-            <div class="border-b border-purple-100 pb-3 fade-in">
-              <p class="font-bold text-lg">${data.nom}</p>
-              <p>Prêt: ${data.montant.toLocaleString()} GNF</p>
-              <p>Taux: ${data.taux}% / mois</p>
-            </div>
-          `;
+            html += `
+  <div class="border-b border-purple-100 pb-3 fade-in">
+    <p class="font-bold text-lg">${data.nom}</p>
+    <p>Prêt: ${data.montant.toLocaleString()} GNF</p>
+    <p>Taux: ${data.taux}% / mois</p>
+    <button onclick="addPayment('${doc.id}', ${data.montant})" 
+      class="bg-green-500 text-white px-4 py-2 rounded-lg mt-2 text-sm">
+      💰 Add Payment
+    </button>
+  </div>
+`;
+              
+    
         });
         document.getElementById('clientsList').innerHTML = html || "<p>Aucun client. Ajoutez-en un!</p>";
       });
