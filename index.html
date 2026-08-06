@@ -3,49 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apex Money GN</title>
+    <title>Apex Money GN - Super Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        .fade-in { animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .card { backdrop-filter: blur(10px); background: rgba(255,255,255,0.9); }
+        .btn-orange { background: linear-gradient(135deg, #FF7F00 0%, #FF5500 100%); }
     </style>
 </head>
-<body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen p-4">
-    <div class="container mx-auto max-w-4xl">
-        <!-- Header -->
-        <div class="card rounded-2xl shadow-lg p-6 mb-6">
-            <h1 class="text-3xl font-bold text-purple-700">💰 Apex Money GN</h1>
-            <p class="text-gray-600">Sauvegarde automatique dans le cloud</p>
-        </div>
+<body class="bg-gray-100">
+    <div id="app"></div>
 
-        <!-- Add Client Form -->
-        <div class="card rounded-2xl shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-bold mb-4">➕ Nouveau Client</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input id="nom" type="text" placeholder="Nom du client" class="border rounded-lg p-3">
-                <input id="montant" type="number" placeholder="Montant Prêt GNF" class="border rounded-lg p-3">
-                <input id="taux" type="number" placeholder="Taux % par mois" class="border rounded-lg p-3">
-            </div>
-            <button onclick="addClient()" class="btn-primary text-white font-bold py-3 px-6 rounded-lg mt-4 w-full">
-                Enregistrer
-            </button>
-        </div>
-
-        <!-- Clients List -->
-        <div class="card rounded-2xl shadow-lg p-6">
-            <h2 class="text-xl font-bold mb-4">📋 Liste des Clients</h2>
-            <div id="clientsList" class="space-y-3">Chargement...</div>
-        </div>
-    </div>
-
-    <!-- FIREBASE SDK -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-      // YOUR FIREBASE CONFIG
       const firebaseConfig = {
         apiKey: "AIzaSyDyqB601iwygUcojI2jl7bt7E276y2jffQ",
         authDomain: "apex-money-gn.firebaseapp.com",
@@ -55,66 +27,83 @@
         appId: "1:252239353273:web:c5cb04b6287ca398fe5268"
       };
 
-      // Initialize Firebase
       const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
       const db = getFirestore(app);
+      let currentUser = null;
+      let userData = null;
 
-      // ADD CLIENT
-      window.addClient = async function() {
-        const nom = document.getElementById('nom').value;
-        const montant = document.getElementById('montant').value;
-        const taux = document.getElementById('taux').value;
-        
-        if(!nom || !montant || !taux) { alert("Remplissez tous les champs"); return; }
-
-        await addDoc(collection(db, "clients"), {
-          nom: nom,
-          montant: Number(montant),
-          taux: Number(taux),
-          date: new Date()
-        });
-
-        document.getElementById('nom').value = '';
-        document.getElementById('montant').value = '';
-        document.getElementById('taux').value = '';
-        alert("Client enregistré avec succès!");
-      }
-// ADD PAYMENT
-window.addPayment = async function(clientId, loanAmount) {
-  const payment = prompt("Enter payment amount in GNF:");
-  if(!payment) return;
-
-  await addDoc(collection(db, "payments"), {
-    clientId: clientId,
-    amount: Number(payment),
-    date: new Date()
-  });
-  
-  alert("Payment of " + Number(payment).toLocaleString() + " GNF recorded!");
-          }
-      // SHOW CLIENTS LIVE FROM FIREBASE
-      const q = query(collection(db, "clients"), orderBy("date", "desc"));
-      onSnapshot(q, (snapshot) => {
-        let html = '';
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          html += `
-            html += `
-  <div class="border-b border-purple-100 pb-3 fade-in">
-    <p class="font-bold text-lg">${data.nom}</p>
-    <p>Prêt: ${data.montant.toLocaleString()} GNF</p>
-    <p>Taux: ${data.taux}% / mois</p>
-    <button onclick="addPayment('${doc.id}', ${data.montant})" 
-      class="bg-green-500 text-white px-4 py-2 rounded-lg mt-2 text-sm">
-      💰 Add Payment
-    </button>
-  </div>
-`;
-              
-    
-        });
-        document.getElementById('clientsList').innerHTML = html || "<p>Aucun client. Ajoutez-en un!</p>";
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          currentUser = user;
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          userData = userDoc.data();
+          showMainApp();
+        } else {
+          showLogin();
+        }
       });
-    </script>
-</body>
-  </html>
+
+      // LOGIN
+      function showLogin() {
+        document.getElementById('app').innerHTML = `
+          <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-400 to-red-500 p-4">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+              <h1 class="text-3xl font-bold text-orange-600 text-center mb-6">💰 Apex Money GN</h1>
+              <input id="email" type="email" placeholder="Email" class="border w-full rounded-lg p-3 mb-3">
+              <div class="relative mb-3">
+                <input id="password" type="password" placeholder="Mot de passe" class="border w-full rounded-lg p-3 pr-10">
+                <i class="fa fa-eye absolute right-3 top-4 cursor-pointer" onclick="togglePassword()"></i>
+              </div>
+              <button onclick="login()" class="btn-orange text-white w-full py-3 rounded-lg font-bold mb-3">Se Connecter</button>
+              <p class="text-center text-sm"><a href="#" onclick="forgotPassword()" class="text-orange-600">Mot de passe oublié?</a></p>
+            </div>
+          </div>
+        `;
+      }
+      window.togglePassword = () => { document.getElementById('password').type = document.getElementById('password').type === 'password' ? 'text' : 'password' }
+      window.forgotPassword = async () => { const email = prompt("Email:"); if(email) { await sendPasswordResetEmail(auth, email); alert("Email envoyé!"); }
+      window.login = async () => { await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value); }
+      window.logout = () => signOut(auth);
+
+      // MAIN APP WITH OWNER DASHBOARD
+      function showMainApp() {
+        document.getElementById('app').innerHTML = `
+          <div class="flex">
+            <div class="bg-orange-600 text-white w-64 min-h-screen p-4">
+              <h2 class="text-2xl font-bold mb-8">💰 Apex Money</h2>
+              <p class="mb-6">Bonjour ${userData.nom} - ${userData.role}</p>
+              <ul class="space-y-3">
+                <li><a href="#" onclick="showPage('dashboard')"><i class="fa fa-home mr-3"></i>Accueil</a></li>
+                ${userData.role === 'owner' ? `
+                <li><a href="#" onclick="showPage('registerUser')"><i class="fa fa-user-plus mr-3"></i>Enregistrer Utilisateur</a></li>
+                <li><a href="#" onclick="showPage('manageWallet')"><i class="fa fa-wallet mr-3"></i>Gérer Portefeuille</a></li>
+                <li><a href="#" onclick="showPage('sendMoney')"><i class="fa fa-paper-plane mr-3"></i>Envoi d'Argent</a></li>
+                <li><a href="#" onclick="showPage('allUsers')"><i class="fa fa-users mr-3"></i>Tous les Utilisateurs</a></li>
+                ` : ''}
+                <li><a href="#" onclick="showPage('settings')"><i class="fa fa-cog mr-3"></i>Paramètres</a></li>
+                <li><a href="#" onclick="logout()" class="text-red-300"><i class="fa fa-sign-out mr-3"></i>Déconnexion</a></li>
+              </ul>
+            </div>
+            <div class="flex-1 p-6" id="mainContent"></div>
+          </div>
+        `;
+        showPage('dashboard');
+      }
+
+      // PAGES
+      window.showPage = function(page) {
+        let html = '';
+        if(page === 'dashboard') {
+          html = `
+            <h1 class="text-3xl font-bold mb-4">Tableau de Bord</h1>
+            <div class="bg-orange-500 text-white rounded-2xl p-6">
+              <p>Solde Disponible</p>
+              <p class="text-4xl font-bold">${userData.solde.toLocaleString()} GNF</p>
+            </div>
+          `;
+        }
+        
+        // OWNER: REGISTER ANYONE
+        if(page === 'registerUser' && userData.role === 'owner') {
+         
