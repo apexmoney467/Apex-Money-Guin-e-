@@ -1,129 +1,68 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Apex Money Guinée</title>
-<style>
-body { font-family: Arial; background: #00a651; text-align: center; padding: 20px; }
-.box { background: white; padding: 30px; border-radius: 15px; max-width: 400px; margin: auto; }
-input { width: 90%; padding: 12px; font-size: 18px; margin: 10px 0; border: 2px solid #00a651; border-radius: 8px; }
-button { background: #00a651; color: white; padding: 15px; border: none; border-radius: 10px; font-size: 18px; width: 100%; margin-top: 10px; }
-.fee { color: #555; font-size: 14px; font-weight: bold; }
-</style>
-</head>
-<body>
-<div class="box">
-  <h2>APEX MONEY GUINÉE 🇬🇳</h2>
-  
-  <label><b>Montant à envoyer (GNF)</b></label>
-  <input type="number" id="amount" placeholder="Ex: 50000" oninput="calcFee()">
-  
-  <p class="fee" id="feeText">Frais: 0 GNF | Total: 0 GNF</p>
-  
-  <button onclick="pay()">Payer Maintenant</button>
-</div>
-
-<script>
-function getFeePercent(amount) {
-  amount = parseInt(amount);
-  if (amount < 10000) return 3;      
-  if (amount < 50000) return 2;      
-  if (amount < 200000) return 1.5;   
-  return 1;                          
-}
-
-function calcFee() {
-  let amount = document.getElementById('amount').value;
-  if(!amount) return;
-  let percent = getFeePercent(amount);
-  let fee = Math.round(amount * percent / 100);
-  let total = parseInt(amount) + fee;
-  document.getElementById('feeText').innerText = `Frais ${percent}%: ${fee} GNF | Total à payer: ${total} GNF`;
-}
-
-async function pay() {
-  let amount = document.getElementById('amount').value;
-  if(!amount || amount < 1000) { alert("Montant minimum 1000 GNF"); return; }
-  
-  let percent = getFeePercent(amount);
-  let fee = Math.round(amount * percent / 100);
-  let total = parseInt(amount) + fee;
-  
-  const res = await fetch('/api/payment', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({amount: total, description: `Transfert ${amount} GNF`})
-  });
-  const data = await res.json();
-  if(data.payment_url) window.location.href = data.payment_url;
-  else alert("Erreur: " + JSON.stringify(data));
-}
-</script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Apex Money Guinée</title>
+<title>Apex Money Guinée 🇬🇳</title>
 <style>
 body { font-family: Arial; background: #f5f5f5; margin: 0; padding: 20px; }
-.container { max-width: 450px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-h1 { color: #009639; text-align: center; }
-input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
-button { background: #009639; color: white; border: none; font-weight: bold; cursor: pointer; }
-button:hover { background: #007a2f; }
+.container { max-width: 450px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+h1 { color: #000; text-align: center; font-size: 22px; }
+input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
+.btn-green { background: #009639; color: white; border: none; font-weight: bold; cursor: pointer; }
+.btn-red { background: #CE1126; color: white; border: none; font-weight: bold; cursor: pointer; }
+.btn-green:hover { background: #007a2f; }
+.btn-red:hover { background: #a00e1d; }
 .tab { display: flex; gap: 10px; }
-.tab button { flex: 1; background: #CE1126; }
-.tab button.active { background: #009639; }
+.tab button { flex: 1; }
 .hidden { display: none; }
 .fee { color: #CE1126; font-weight: bold; }
 .header { display: flex; justify-content: space-between; align-items: center; }
+.flag { font-size: 24px; }
 </style>
 </head>
 <body>
-<div class="container">
 
-<div id="auth-screen">
-<h1>💚 Apex Money</h1>
+<!-- SCREEN 1: LOGIN / REGISTER -->
+<div id="auth-screen" class="container">
+<h1><span class="flag">💚</span> Apex Money</h1>
 <div class="tab">
-<button id="btn-login" class="active" onclick="showTab('login')">Connexion</button>
-<button id="btn-register" onclick="showTab('register')">Inscription</button>
+<button id="btn-login" class="btn-green" onclick="showTab('login')">Connexion</button>
+<button id="btn-register" class="btn-red" onclick="showTab('register')">Inscription</button>
 </div>
+
 <div id="login">
 <input type="tel" id="login-phone" placeholder="Numéro: +224...">
 <input type="password" id="login-pass" placeholder="Mot de passe">
-<button onclick="login()">Se Connecter</button>
+<button class="btn-green" onclick="login()">Se Connecter</button>
 </div>
+
 <div id="register" class="hidden">
 <input type="text" id="reg-name" placeholder="Nom Complet">
 <input type="tel" id="reg-phone" placeholder="Numéro: +224...">
 <input type="password" id="reg-pass" placeholder="Créer Mot de passe">
-<button onclick="register()">Créer Compte</button>
+<button class="btn-red" onclick="register()">Créer Compte</button>
 </div>
 </div>
 
-<div id="app-screen" class="hidden">
+<!-- SCREEN 2: DASHBOARD / PAYMENT -->
+<div id="app-screen" class="container hidden">
 <div class="header">
-<h1>💚 Apex Money</h1>
+<h1>APEX MONEY GUINÉE <span class="flag">🇬🇳</span></h1>
 <button onclick="logout()" style="width: auto; padding: 8px 12px; background: #ccc; color: black;">Déconnexion</button>
 </div>
 <p>Bienvenue <b id="user-name"></b> 👋</p>
-<h3>Envoyer de l'argent</h3>
-<input type="number" id="amount" placeholder="Montant à envoyer GNF" oninput="calcFee()">
-<p>Frais: <span class="fee" id="fee">0</span> GNF</p>
-<p>Total à payer: <span class="fee" id="total">0</span> GNF</p>
+
+<label><b>Montant à envoyer (GNF)</b></label>
+<input type="number" id="amount" placeholder="Ex: 50000" oninput="calcFee()">
+<p style="text-align:center; color:#CE1126;"><b>Frais: <span id="fee">0</span> GNF | Total: <span id="total">0</span> GNF</b></p>
 <input type="tel" id="receiver" placeholder="Numéro du bénéficiaire">
-<button onclick="pay()">Payer Maintenant</button>
+<button class="btn-green" onclick="pay()">Payer Maintenant</button>
+
 <hr>
 <h3>Mon Compte</h3>
 <p><b>Numéro:</b> <span id="user-phone"></span></p>
 <p style="color: #888; font-size: 12px;">En attente de l'API CinetPay</p>
-</div>
-
 </div>
 
 <script>
@@ -135,9 +74,6 @@ function showTab(tab) {
 document.getElementById('login').classList.add('hidden');
 document.getElementById('register').classList.add('hidden');
 document.getElementById(tab).classList.remove('hidden');
-document.getElementById('btn-login').classList.remove('active');
-document.getElementById('btn-register').classList.remove('active');
-document.getElementById('btn-' + tab).classList.add('active');
 }
 function register() {
 let name = document.getElementById('reg-name').value;
@@ -164,8 +100,7 @@ document.getElementById('user-phone').innerText = user.phone;
 }
 function logout() {
 localStorage.removeItem('user');
-document.getElementById('auth-screen').classList.remove('hidden');
-document.getElementById('app-screen').classList.add('hidden');
+location.reload();
 }
 function calcFee() {
 let amount = parseFloat(document.getElementById('amount').value) || 0;
