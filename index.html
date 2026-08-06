@@ -14,7 +14,7 @@
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-      import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDyqB601iwygUcojI2jl7bt7E276y2jffQ",
@@ -29,13 +29,13 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
       let currentUser = null;
-      let userData = null;
+      let userData = {role: 'owner', nom: 'Owner', solde: 0}; // DEFAULT
 
       onAuthStateChanged(auth, async (user) => {
         if (user) {
           currentUser = user;
           const userDoc = await getDoc(doc(db, "users", user.uid));
-          userData = userDoc.data();
+          if(userDoc.exists()) { userData = userDoc.data(); }
           showMainApp();
         } else {
           showLogin();
@@ -46,21 +46,32 @@
         document.getElementById('app').innerHTML = `
           <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-400 to-red-500 p-4">
             <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-              <h1 class="text-3xl font-bold text-orange-600 text-center mb-6">💰 Apex Money GN</h1>
+              <h1 class="text-3xl font-bold text-orange-600 text-center mb-2">💰 Apex Money GN</h1>
+              <p class="text-center mb-6">Première connexion: Créez le compte Owner</p>
               <input id="email" type="email" placeholder="Email" class="border w-full rounded-lg p-3 mb-3">
-              <div class="relative mb-3">
-                <input id="password" type="password" placeholder="Mot de passe" class="border w-full rounded-lg p-3 pr-10">
-                <i class="fa fa-eye absolute right-3 top-4 cursor-pointer" onclick="togglePassword()"></i>
-              </div>
-              <button onclick="login()" class="btn-orange text-white w-full py-3 rounded-lg font-bold mb-3">Se Connecter</button>
-              <p class="text-center text-sm"><a href="#" onclick="forgotPassword()" class="text-orange-600">Mot de passe oublié?</a></p>
+              <input id="password" type="password" placeholder="Mot de passe" class="border w-full rounded-lg p-3 mb-3">
+              <input id="nom" placeholder="Votre Nom" class="border w-full rounded-lg p-3 mb-3">
+              <button onclick="registerOwner()" class="btn-orange text-white w-full py-3 rounded-lg font-bold mb-3">Créer Compte Owner</button>
+              <button onclick="login()" class="bg-gray-700 text-white w-full py-3 rounded-lg">Se Connecter</button>
             </div>
           </div>
         `;
       }
-      window.togglePassword = () => { document.getElementById('password').type = document.getElementById('password').type === 'password' ? 'text' : 'password' }
-      window.forgotPassword = async () => { const email = prompt("Email:"); if(email) { await sendPasswordResetEmail(auth, email); alert("Email envoyé!"); }
-      window.login = async () => { await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value); }
+      
+      window.registerOwner = async () => {
+        const userCred = await createUserWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
+        await setDoc(doc(db, "users", userCred.user.uid), { 
+          nom: document.getElementById('nom').value, 
+          email: document.getElementById('email').value, 
+          role: 'owner', 
+          solde: 1000000 // Start with 1M GNF
+        });
+        alert("Compte Owner créé!");
+      }
+      
+      window.login = async () => { 
+        await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value); 
+      }
       window.logout = () => signOut(auth);
 
       function showMainApp() {
@@ -68,56 +79,22 @@
           <div class="flex">
             <div class="bg-orange-600 text-white w-64 min-h-screen p-4">
               <h2 class="text-2xl font-bold mb-8">💰 Apex Money</h2>
-              <p class="mb-6">Bonjour ${userData.nom} - ${userData.role}</p>
+              <p class="mb-6">Bonjour ${userData.nom}</p>
               <ul class="space-y-3">
-                <li><a href="#" onclick="showPage('dashboard')"><i class="fa fa-home mr-3"></i>Accueil</a></li>
-                ${userData.role === 'owner' ? `
-                <li><a href="#" onclick="showPage('registerUser')"><i class="fa fa-user-plus mr-3"></i>Enregistrer Utilisateur</a></li>
-                <li><a href="#" onclick="showPage('manageWallet')"><i class="fa fa-wallet mr-3"></i>Gérer Portefeuille</a></li>
-                <li><a href="#" onclick="showPage('sendMoney')"><i class="fa fa-paper-plane mr-3"></i>Envoi d'Argent</a></li>
-                <li><a href="#" onclick="showPage('allUsers')"><i class="fa fa-users mr-3"></i>Tous les Utilisateurs</a></li>
-                ` : ''}
+                <li><a href="#" onclick="alert('Dashboard')"><i class="fa fa-home mr-3"></i>Accueil</a></li>
                 <li><a href="#" onclick="logout()" class="text-red-300"><i class="fa fa-sign-out mr-3"></i>Déconnexion</a></li>
               </ul>
             </div>
-            <div class="flex-1 p-6" id="mainContent"></div>
+            <div class="flex-1 p-6">
+              <h1 class="text-3xl font-bold mb-4">Tableau de Bord</h1>
+              <div class="bg-orange-500 text-white rounded-2xl p-6">
+                <p>Solde Disponible</p>
+                <p class="text-4xl font-bold">${userData.solde.toLocaleString()} GNF</p>
+              </div>
+            </div>
           </div>
         `;
-        showPage('dashboard');
       }
-
-      window.showPage = function(page) {
-        let html = '';
-        if(page === 'dashboard') {
-          html = `<h1 class="text-3xl font-bold mb-4">Tableau de Bord</h1><div class="bg-orange-500 text-white rounded-2xl p-6"><p>Solde Disponible</p><p class="text-4xl font-bold">${userData.solde.toLocaleString()} GNF</p></div>`;
-        }
-        if(page === 'registerUser' && userData.role === 'owner') {
-          html = `<h1 class="text-3xl font-bold mb-4">Enregistrer un Utilisateur</h1><div class="bg-white p-6 rounded-xl"><input id="newNom" placeholder="Nom" class="border w-full p-3 mb-2 rounded"><input id="newEmail" placeholder="Email" class="border w-full p-3 mb-2 rounded"><input id="newPass" type="password" placeholder="Mot de passe" class="border w-full p-3 mb-2 rounded"><select id="newRole" class="border w-full p-3 mb-4 rounded"><option value="client">Client</option><option value="agent">Agent</option></select><button onclick="ownerRegisterUser()" class="btn-orange text-white px-6 py-3 rounded-lg">Créer</button></div>`;
-        }
-        if(page === 'manageWallet' && userData.role === 'owner') {
-          html = `<h1 class="text-3xl font-bold mb-4">Dépôt / Retrait</h1><div class="bg-white p-6 rounded-xl"><select id="userSelect" class="border w-full p-3 mb-3 rounded"></select><input id="amount" type="number" placeholder="Montant GNF" class="border w-full p-3 mb-3 rounded"><button onclick="addMoney()" class="bg-green-500 text-white px-6 py-3 rounded-lg mr-2">+ Dépôt</button><button onclick="removeMoney()" class="bg-red-500 text-white px-6 py-3 rounded-lg">- Retrait</button></div>`;
-          setTimeout(loadUsersForSelect, 200);
-        }
-        if(page === 'sendMoney' && userData.role === 'owner') {
-          html = `<h1 class="text-3xl font-bold mb-4">Envoi d'Argent</h1><div class="bg-white p-6 rounded-xl"><select id="sendType" class="border w-full p-3 mb-3 rounded"><option value="apex">Portefeuille Apex</option><option value="orange">Orange Money</option><option value="mtn">MTN MoMo</option></select><input id="sendNumber" placeholder="Numéro" class="border w-full p-3 mb-3 rounded"><input id="sendAmount" type="number" placeholder="Montant GNF" class="border w-full p-3 mb-3 rounded"><button onclick="sendMoney()" class="btn-orange text-white px-6 py-3 rounded-lg">Envoyer</button></div>`;
-        }
-        if(page === 'allUsers' && userData.role === 'owner') {
-          html = `<h1 class="text-3xl font-bold mb-4">Tous les Utilisateurs</h1><div id="allUsersList"></div>`;
-          setTimeout(loadAllUsers, 200);
-        }
-        document.getElementById('mainContent').innerHTML = html;
-      }
-
-      window.ownerRegisterUser = async () => {
-        const userCred = await createUserWithEmailAndPassword(auth, document.getElementById('newEmail').value, document.getElementById('newPass').value);
-        await setDoc(doc(db, "users", userCred.user.uid), { nom: document.getElementById('newNom').value, email: document.getElementById('newEmail').value, role: document.getElementById('newRole').value, solde: 0 });
-        alert("Utilisateur créé!");
-      }
-      function loadUsersForSelect() { onSnapshot(collection(db, "users"), (snap) => { let options = ''; snap.forEach(doc => { const u = doc.data(); options += `<option value="${doc.id}">${u.nom} - ${u.solde} GNF</option>`; }); document.getElementById('userSelect').innerHTML = options; }); }
-      window.addMoney = async () => { await updateDoc(doc(db, "users", document.getElementById('userSelect').value), { solde: increment(Number(document.getElementById('amount').value)) }); alert("Dépôt fait!"); }
-      window.removeMoney = async () => { await updateDoc(doc(db, "users", document.getElementById('userSelect').value), { solde: increment(-Number(document.getElementById('amount').value)) }); alert("Retrait fait!"); }
-      window.sendMoney = () => { alert("Bientôt: Connexion CinetPay ici"); }
-      function loadAllUsers() { onSnapshot(collection(db, "users"), (snap) => { let html = ''; snap.forEach(doc => { const u = doc.data(); html += `<div class="bg-white p-4 rounded mb-2"><b>${u.nom}</b> - ${u.solde.toLocaleString()} GNF</div>`; }); document.getElementById('allUsersList').innerHTML = html; }); }
     </script>
 </body>
-</html>
+    </html>
