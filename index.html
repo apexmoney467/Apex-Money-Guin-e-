@@ -5,112 +5,215 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Apex Money Guinée 🇬🇳</title>
 <style>
-body { font-family: Arial; background: #f5f5f5; margin: 0; padding: 20px; }
-.container { max-width: 450px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-h1 { color: #000; text-align: center; font-size: 22px; }
-input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
+body { font-family: Arial; background: #f5f5f5; margin: 0; padding: 10px; }
+.container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
+h1 { color: #009639; text-align: center; font-size: 20px; }
+input, button, select { width: 100%; padding: 10px; margin: 6px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
 .btn-green { background: #009639; color: white; border: none; font-weight: bold; cursor: pointer; }
 .btn-red { background: #CE1126; color: white; border: none; font-weight: bold; cursor: pointer; }
-.btn-green:hover { background: #007a2f; }
-.btn-red:hover { background: #a00e1d; }
-.tab { display: flex; gap: 10px; }
-.tab button { flex: 1; }
+.btn-blue { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; }
 .hidden { display: none; }
-.fee { color: #CE1126; font-weight: bold; }
-.header { display: flex; justify-content: space-between; align-items: center; }
-.flag { font-size: 24px; }
+.badge { background: #009639; color: white; padding: 3px 8px; border-radius: 20px; font-size: 12px; }
+.wallet { background: #f0fff4; padding: 10px; border-radius: 8px; text-align: center; }
+.tx { border-bottom: 1px solid #eee; padding: 8px 0; font-size: 14px; }
 </style>
 </head>
 <body>
 
-<!-- SCREEN 1: LOGIN / REGISTER -->
+<!-- LOGIN / REGISTER -->
 <div id="auth-screen" class="container">
-<h1><span class="flag">💚</span> Apex Money</h1>
-<div class="tab">
-<button id="btn-login" class="btn-green" onclick="showTab('login')">Connexion</button>
-<button id="btn-register" class="btn-red" onclick="showTab('register')">Inscription</button>
+<h1>💚 Apex Money</h1>
+<div style="display:flex; gap:10px;">
+<button class="btn-green" onclick="showTab('login')">Connexion</button>
+<button class="btn-red" onclick="showTab('register')">Inscription</button>
 </div>
-
 <div id="login">
 <input type="tel" id="login-phone" placeholder="Numéro: +224...">
 <input type="password" id="login-pass" placeholder="Mot de passe">
 <button class="btn-green" onclick="login()">Se Connecter</button>
 </div>
-
 <div id="register" class="hidden">
 <input type="text" id="reg-name" placeholder="Nom Complet">
 <input type="tel" id="reg-phone" placeholder="Numéro: +224...">
 <input type="password" id="reg-pass" placeholder="Créer Mot de passe">
-<button class="btn-red" onclick="register()">Créer Compte</button>
+<button class="btn-red" onclick="register('client')">Créer Compte Client</button>
 </div>
 </div>
 
-<!-- SCREEN 2: DASHBOARD / PAYMENT -->
-<div id="app-screen" class="container hidden">
-<div class="header">
-<h1>APEX MONEY GUINÉE <span class="flag">🇬🇳</span></h1>
-<button onclick="logout()" style="width: auto; padding: 8px 12px; background: #ccc; color: black;">Déconnexion</button>
+<!-- OWNER PANEL -->
+<div id="owner-panel" class="container hidden">
+<h1>👑 Portail Owner</h1>
+<p>ID: <b id="owner-id"></b> | <span class="badge">OWNER</span></p>
+<h3>Créer un Utilisateur</h3>
+<input type="text" id="new-name" placeholder="Nom">
+<input type="tel" id="new-phone" placeholder="Numéro">
+<select id="new-role"><option value="client">Client</option><option value="agent">Agent</option><option value="admin">Admin</option></select>
+<button class="btn-blue" onclick="createUser()">Créer</button>
+
+<h3>Ajouter de l'argent</h3>
+<input type="tel" id="add-phone" placeholder="Numéro du client">
+<input type="number" id="add-amount" placeholder="Montant GNF">
+<button class="btn-green" onclick="addMoney()">Ajouter Solde</button>
+
+<h3>Toutes les Transactions</h3>
+<div id="all-tx"></div>
+<button class="btn-red" onclick="logout()">Déconnexion</button>
 </div>
-<p>Bienvenue <b id="user-name"></b> 👋</p>
 
-<label><b>Montant à envoyer (GNF)</b></label>
-<input type="number" id="amount" placeholder="Ex: 50000" oninput="calcFee()">
-<p style="text-align:center; color:#CE1126;"><b>Frais: <span id="fee">0</span> GNF | Total: <span id="total">0</span> GNF</b></p>
-<input type="tel" id="receiver" placeholder="Numéro du bénéficiaire">
-<button class="btn-green" onclick="pay()">Payer Maintenant</button>
+<!-- AGENT PANEL -->
+<div id="agent-panel" class="container hidden">
+<h1>🟢 Portail Agent</h1>
+<p>ID: <b id="agent-id"></b> | <span class="badge">AGENT</span></p>
+<h3>Retrait pour Client</h3>
+<input type="tel" id="retrait-phone" placeholder="Numéro Client">
+<input type="number" id="retrait-amount" placeholder="Montant GNF">
+<button class="btn-red" onclick="retrait()">Faire Retrait</button>
+<button class="btn-red" onclick="logout()">Déconnexion</button>
+</div>
 
-<hr>
-<h3>Mon Compte</h3>
-<p><b>Numéro:</b> <span id="user-phone"></span></p>
-<p style="color: #888; font-size: 12px;">En attente de l'API CinetPay</p>
+<!-- CLIENT DASHBOARD -->
+<div id="client-panel" class="container hidden">
+<h1>💚 Apex Money</h1>
+<p>ID: <b id="client-id"></b> | <span class="badge" id="client-role"></span></p>
+<div class="wallet">
+<h3>Solde: <span id="balance">0</span> GNF</h3>
+</div>
+<h3>Envoyer de l'argent</h3>
+<input type="tel" id="send-phone" placeholder="Numéro du bénéficiaire">
+<input type="number" id="send-amount" placeholder="Montant GNF">
+<button class="btn-green" onclick="sendMoney()">Envoyer</button>
+
+<h3>Mes Transactions</h3>
+<div id="my-tx"></div>
+<button class="btn-red" onclick="logout()">Déconnexion</button>
 </div>
 
 <script>
-window.onload = function() {
-let user = JSON.parse(localStorage.getItem('user'));
-if(user) { goToDashboard(user); }
+let users = JSON.parse(localStorage.getItem('apex_users')) || [];
+let transactions = JSON.parse(localStorage.getItem('apex_tx')) || [];
+let currentUser = JSON.parse(localStorage.getItem('apex_current')) || null;
+
+// Create Owner on first run
+if(users.length == 0) {
+users.push({id: 'OWN-001', name: 'Owner', phone: '+224000000000', pass: '1234', role: 'owner', balance: 0});
+save();
 }
+
+window.onload = function() { if(currentUser) { showPanel(currentUser.role); } }
+
+function save() {
+localStorage.setItem('apex_users', JSON.stringify(users));
+localStorage.setItem('apex_tx', JSON.stringify(transactions));
+localStorage.setItem('apex_current', JSON.stringify(currentUser));
+}
+
 function showTab(tab) {
 document.getElementById('login').classList.add('hidden');
 document.getElementById('register').classList.add('hidden');
 document.getElementById(tab).classList.remove('hidden');
 }
-function register() {
+
+function generateID(role) {
+let prefix = role == 'owner' ? 'OWN' : role == 'admin' ? 'ADM' : role == 'agent' ? 'AGT' : 'CLT';
+return prefix + '-' + Math.floor(1000 + Math.random() * 9000);
+}
+
+function register(role) {
 let name = document.getElementById('reg-name').value;
 let phone = document.getElementById('reg-phone').value;
 let pass = document.getElementById('reg-pass').value;
-if(!name || !phone || !pass) { alert('Remplissez tous les champs'); return; }
-let user = {name, phone, pass};
-localStorage.setItem('user', JSON.stringify(user));
-goToDashboard(user);
+let id = generateID(role);
+let newUser = {id, name, phone, pass, role, balance: 0};
+users.push(newUser);
+currentUser = newUser;
+save();
+showPanel(role);
 }
+
 function login() {
 let phone = document.getElementById('login-phone').value;
 let pass = document.getElementById('login-pass').value;
-let user = JSON.parse(localStorage.getItem('user'));
-if(user && user.phone == phone && user.pass == pass) {
-goToDashboard(user);
-} else { alert('Numéro ou mot de passe incorrect'); }
+let user = users.find(u => u.phone == phone && u.pass == pass);
+if(user) { currentUser = user; save(); showPanel(user.role); }
+else { alert('Identifiants incorrects'); }
 }
-function goToDashboard(user) {
+
+function showPanel(role) {
 document.getElementById('auth-screen').classList.add('hidden');
-document.getElementById('app-screen').classList.remove('hidden');
-document.getElementById('user-name').innerText = user.name;
-document.getElementById('user-phone').innerText = user.phone;
+document.getElementById('owner-panel').classList.add('hidden');
+document.getElementById('agent-panel').classList.add('hidden');
+document.getElementById('client-panel').classList.add('hidden');
+
+if(role == 'owner') {
+document.getElementById('owner-panel').classList.remove('hidden');
+document.getElementById('owner-id').innerText = currentUser.id;
+loadAllTx();
 }
-function logout() {
-localStorage.removeItem('user');
-location.reload();
+if(role == 'agent') {
+document.getElementById('agent-panel').classList.remove('hidden');
+document.getElementById('agent-id').innerText = currentUser.id;
 }
-function calcFee() {
-let amount = parseFloat(document.getElementById('amount').value) || 0;
-let fee = amount <= 20000 ? amount * 0.05 : amount * 0.02;
-document.getElementById('fee').innerText = fee.toFixed(0);
-document.getElementById('total').innerText = (amount + fee).toFixed(0);
+if(role == 'client' || role == 'admin') {
+document.getElementById('client-panel').classList.remove('hidden');
+document.getElementById('client-id').innerText = currentUser.id;
+document.getElementById('client-role').innerText = role.toUpperCase();
+document.getElementById('balance').innerText = currentUser.balance;
+loadMyTx();
 }
-function pay() {
-alert('Bientôt disponible! En attente API CinetPay');
 }
+
+function createUser() {
+let name = document.getElementById('new-name').value;
+let phone = document.getElementById('new-phone').value;
+let role = document.getElementById('new-role').value;
+let id = generateID(role);
+users.push({id, name, phone, pass: '1234', role, balance: 0});
+alert('Créé! ID: ' + id + ' | Pass: 1234');
+save();
+}
+
+function addMoney() {
+let phone = document.getElementById('add-phone').value;
+let amount = parseFloat(document.getElementById('add-amount').value);
+let user = users.find(u => u.phone == phone);
+if(user) { user.balance += amount; addTx('OWNER', user.phone, amount, 'DEPOSIT'); save(); alert('Solde ajouté'); }
+}
+
+function sendMoney() {
+let to = document.getElementById('send-phone').value;
+let amount = parseFloat(document.getElementById('send-amount').value);
+let receiver = users.find(u => u.phone == to);
+if(currentUser.balance >= amount && receiver) {
+currentUser.balance -= amount; receiver.balance += amount;
+addTx(currentUser.phone, to, amount, 'SEND');
+save(); showPanel('client'); alert('Envoyé!');
+}
+}
+
+function retrait() {
+let phone = document.getElementById('retrait-phone').value;
+let amount = parseFloat(document.getElementById('retrait-amount').value);
+let user = users.find(u => u.phone == phone);
+if(user && user.balance >= amount) {
+user.balance -= amount; addTx(phone, 'AGENT', amount, 'WITHDRAW');
+save(); alert('Retrait fait');
+}
+}
+
+function addTx(from, to, amount, type) {
+transactions.push({id: 'TX'+Date.now(), from, to, amount, type, date: new Date().toLocaleString()});
+}
+
+function loadMyTx() {
+let myTx = transactions.filter(t => t.from == currentUser.phone || t.to == currentUser.phone);
+document.getElementById('my-tx').innerHTML = myTx.map(t => `<div class="tx">${t.type}: ${t.amount} GNF<br>${t.date}</div>`).join('');
+}
+
+function loadAllTx() {
+document.getElementById('all-tx').innerHTML = transactions.map(t => `<div class="tx">${t.type}: ${t.amount} GNF<br>De: ${t.from} → A: ${t.to}<br>${t.date}</div>`).join('');
+}
+
+function logout() { currentUser = null; save(); location.reload(); }
 </script>
 </body>
   </html>
