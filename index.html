@@ -79,7 +79,19 @@
         document.getElementById('taux').value = '';
         alert("Client enregistré avec succès!");
       }
+// ADD PAYMENT
+window.addPayment = async function(clientId, loanAmount) {
+  const payment = prompt("Enter payment amount in GNF:");
+  if(!payment) return;
 
+  await addDoc(collection(db, "payments"), {
+    clientId: clientId,
+    amount: Number(payment),
+    date: new Date()
+  });
+  
+  alert("Payment of " + Number(payment).toLocaleString() + " GNF recorded!");
+          }
       // SHOW CLIENTS LIVE FROM FIREBASE
       const q = query(collection(db, "clients"), orderBy("date", "desc"));
       onSnapshot(q, (snapshot) => {
