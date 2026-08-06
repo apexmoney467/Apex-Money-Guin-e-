@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apex Money GN - Super Admin</title>
+    <title>Apex Money GN</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        .btn-orange { background: linear-gradient(135deg, #FF7F00 0%, #FF5500 100%); }
-    </style>
+    <style> .btn-orange { background: linear-gradient(135deg, #FF7F00 0%, #FF5500 100%); } </style>
 </head>
 <body class="bg-gray-100">
-    <div id="app"></div>
+    <div id="app">Chargement...</div>
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -44,7 +42,6 @@
         }
       });
 
-      // LOGIN
       function showLogin() {
         document.getElementById('app').innerHTML = `
           <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-400 to-red-500 p-4">
@@ -66,7 +63,6 @@
       window.login = async () => { await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value); }
       window.logout = () => signOut(auth);
 
-      // MAIN APP WITH OWNER DASHBOARD
       function showMainApp() {
         document.getElementById('app').innerHTML = `
           <div class="flex">
@@ -81,7 +77,6 @@
                 <li><a href="#" onclick="showPage('sendMoney')"><i class="fa fa-paper-plane mr-3"></i>Envoi d'Argent</a></li>
                 <li><a href="#" onclick="showPage('allUsers')"><i class="fa fa-users mr-3"></i>Tous les Utilisateurs</a></li>
                 ` : ''}
-                <li><a href="#" onclick="showPage('settings')"><i class="fa fa-cog mr-3"></i>Paramètres</a></li>
                 <li><a href="#" onclick="logout()" class="text-red-300"><i class="fa fa-sign-out mr-3"></i>Déconnexion</a></li>
               </ul>
             </div>
@@ -91,84 +86,38 @@
         showPage('dashboard');
       }
 
-      // PAGES
       window.showPage = function(page) {
         let html = '';
         if(page === 'dashboard') {
-          html = `
-            <h1 class="text-3xl font-bold mb-4">Tableau de Bord</h1>
-            <div class="bg-orange-500 text-white rounded-2xl p-6">
-              <p>Solde Disponible</p>
-              <p class="text-4xl font-bold">${userData.solde.toLocaleString()} GNF</p>
-            </div>
-          `;
+          html = `<h1 class="text-3xl font-bold mb-4">Tableau de Bord</h1><div class="bg-orange-500 text-white rounded-2xl p-6"><p>Solde Disponible</p><p class="text-4xl font-bold">${userData.solde.toLocaleString()} GNF</p></div>`;
         }
-        
-        
-         
-// OWNER: REGISTER ANYONE
         if(page === 'registerUser' && userData.role === 'owner') {
-          html = `
-            <h1 class="text-3xl font-bold mb-4">Enregistrer un Nouvel Utilisateur</h1>
-            <div class="bg-white p-6 rounded-xl">
-              <input id="newNom" placeholder="Nom complet" class="border w-full p-3 mb-2 rounded">
-              <input id="newTel" placeholder="Téléphone 62xxxxxxx" class="border w-full p-3 mb-2 rounded">
-              <input id="newEmail" placeholder="Email" class="border w-full p-3 mb-2 rounded">
-              <div class="relative mb-2">
-                <input id="newPass" type="password" placeholder="Mot de passe" class="border w-full p-3 pr-10 rounded">
-                <i class="fa fa-eye absolute right-3 top-4 cursor-pointer" onclick="toggleNewPass()"></i>
-              </div>
-              <select id="newRole" class="border w-full p-3 mb-4 rounded">
-                <option value="client">Client</option>
-                <option value="agent">Agent</option>
-              </select>
-              <button onclick="ownerRegisterUser()" class="btn-orange text-white px-6 py-3 rounded-lg">Créer Compte</button>
-            </div>
-          `;
+          html = `<h1 class="text-3xl font-bold mb-4">Enregistrer un Utilisateur</h1><div class="bg-white p-6 rounded-xl"><input id="newNom" placeholder="Nom" class="border w-full p-3 mb-2 rounded"><input id="newEmail" placeholder="Email" class="border w-full p-3 mb-2 rounded"><input id="newPass" type="password" placeholder="Mot de passe" class="border w-full p-3 mb-2 rounded"><select id="newRole" class="border w-full p-3 mb-4 rounded"><option value="client">Client</option><option value="agent">Agent</option></select><button onclick="ownerRegisterUser()" class="btn-orange text-white px-6 py-3 rounded-lg">Créer</button></div>`;
         }
-
-        // OWNER: ADD/REMOVE MONEY
         if(page === 'manageWallet' && userData.role === 'owner') {
-          html = `
-            <h1 class="text-3xl font-bold mb-4">Dépôt / Retrait Portefeuille</h1>
-            <div class="bg-white p-6 rounded-xl">
-              <select id="userSelect" class="border w-full p-3 mb-3 rounded"><option>Chargement...</option></select>
-              <input id="amount" type="number" placeholder="Montant GNF" class="border w-full p-3 mb-3 rounded">
-              <button onclick="addMoney()" class="bg-green-500 text-white px-6 py-3 rounded-lg mr-2">+ Dépôt</button>
-              <button onclick="removeMoney()" class="bg-red-500 text-white px-6 py-3 rounded-lg">- Retrait</button>
-            </div>
-          `;
-          setTimeout(loadUsersForSelect, 100);
+          html = `<h1 class="text-3xl font-bold mb-4">Dépôt / Retrait</h1><div class="bg-white p-6 rounded-xl"><select id="userSelect" class="border w-full p-3 mb-3 rounded"></select><input id="amount" type="number" placeholder="Montant GNF" class="border w-full p-3 mb-3 rounded"><button onclick="addMoney()" class="bg-green-500 text-white px-6 py-3 rounded-lg mr-2">+ Dépôt</button><button onclick="removeMoney()" class="bg-red-500 text-white px-6 py-3 rounded-lg">- Retrait</button></div>`;
+          setTimeout(loadUsersForSelect, 200);
         }
-
-        // OWNER: SEND MONEY LIKE ORANGE MONEY
         if(page === 'sendMoney' && userData.role === 'owner') {
-          html = `
-            <h1 class="text-3xl font-bold mb-4">Envoi d'Argent Instantané</h1>
-            <div class="bg-white p-6 rounded-xl">
-              <select id="sendType" class="border w-full p-3 mb-3 rounded">
-                <option value="apex">Portefeuille Apex</option>
-                <option value="orange">Orange Money</option>
-                <option value="mtn">MTN MoMo</option>
-                <option value="wave">Wave</option>
-                <option value="bank">Compte Bancaire</option>
-              </select>
-              <input id="sendNumber" placeholder="Numéro ou Compte" class="border w-full p-3 mb-3 rounded">
-              <input id="sendAmount" type="number" placeholder="Montant GNF" class="border w-full p-3 mb-3 rounded">
-              <button onclick="sendMoney()" class="btn-orange text-white px-6 py-3 rounded-lg">Envoyer Maintenant</button>
-            </div>
-          `;
+          html = `<h1 class="text-3xl font-bold mb-4">Envoi d'Argent</h1><div class="bg-white p-6 rounded-xl"><select id="sendType" class="border w-full p-3 mb-3 rounded"><option value="apex">Portefeuille Apex</option><option value="orange">Orange Money</option><option value="mtn">MTN MoMo</option></select><input id="sendNumber" placeholder="Numéro" class="border w-full p-3 mb-3 rounded"><input id="sendAmount" type="number" placeholder="Montant GNF" class="border w-full p-3 mb-3 rounded"><button onclick="sendMoney()" class="btn-orange text-white px-6 py-3 rounded-lg">Envoyer</button></div>`;
         }
-
         if(page === 'allUsers' && userData.role === 'owner') {
           html = `<h1 class="text-3xl font-bold mb-4">Tous les Utilisateurs</h1><div id="allUsersList"></div>`;
-          setTimeout(loadAllUsers, 100);
+          setTimeout(loadAllUsers, 200);
         }
-
         document.getElementById('mainContent').innerHTML = html;
       }
 
-      // ADD THIS FUNCTION TOO - FOR SHOW PASSWORD IN REGISTER FORM
-      window.toggleNewPass = () => { 
-        document.getElementById('newPass').type = document.getElementById('newPass').type === 'password' ? 'text' : 'password' 
-           }
+      window.ownerRegisterUser = async () => {
+        const userCred = await createUserWithEmailAndPassword(auth, document.getElementById('newEmail').value, document.getElementById('newPass').value);
+        await setDoc(doc(db, "users", userCred.user.uid), { nom: document.getElementById('newNom').value, email: document.getElementById('newEmail').value, role: document.getElementById('newRole').value, solde: 0 });
+        alert("Utilisateur créé!");
+      }
+      function loadUsersForSelect() { onSnapshot(collection(db, "users"), (snap) => { let options = ''; snap.forEach(doc => { const u = doc.data(); options += `<option value="${doc.id}">${u.nom} - ${u.solde} GNF</option>`; }); document.getElementById('userSelect').innerHTML = options; }); }
+      window.addMoney = async () => { await updateDoc(doc(db, "users", document.getElementById('userSelect').value), { solde: increment(Number(document.getElementById('amount').value)) }); alert("Dépôt fait!"); }
+      window.removeMoney = async () => { await updateDoc(doc(db, "users", document.getElementById('userSelect').value), { solde: increment(-Number(document.getElementById('amount').value)) }); alert("Retrait fait!"); }
+      window.sendMoney = () => { alert("Bientôt: Connexion CinetPay ici"); }
+      function loadAllUsers() { onSnapshot(collection(db, "users"), (snap) => { let html = ''; snap.forEach(doc => { const u = doc.data(); html += `<div class="bg-white p-4 rounded mb-2"><b>${u.nom}</b> - ${u.solde.toLocaleString()} GNF</div>`; }); document.getElementById('allUsersList').innerHTML = html; }); }
+    </script>
+</body>
+</html>
