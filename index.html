@@ -104,6 +104,71 @@
           `;
         }
         
-        // OWNER: REGISTER ANYONE
-        if(page === 'registerUser' && userData.role === 'owner') {
+        
          
+// OWNER: REGISTER ANYONE
+        if(page === 'registerUser' && userData.role === 'owner') {
+          html = `
+            <h1 class="text-3xl font-bold mb-4">Enregistrer un Nouvel Utilisateur</h1>
+            <div class="bg-white p-6 rounded-xl">
+              <input id="newNom" placeholder="Nom complet" class="border w-full p-3 mb-2 rounded">
+              <input id="newTel" placeholder="Téléphone 62xxxxxxx" class="border w-full p-3 mb-2 rounded">
+              <input id="newEmail" placeholder="Email" class="border w-full p-3 mb-2 rounded">
+              <div class="relative mb-2">
+                <input id="newPass" type="password" placeholder="Mot de passe" class="border w-full p-3 pr-10 rounded">
+                <i class="fa fa-eye absolute right-3 top-4 cursor-pointer" onclick="toggleNewPass()"></i>
+              </div>
+              <select id="newRole" class="border w-full p-3 mb-4 rounded">
+                <option value="client">Client</option>
+                <option value="agent">Agent</option>
+              </select>
+              <button onclick="ownerRegisterUser()" class="btn-orange text-white px-6 py-3 rounded-lg">Créer Compte</button>
+            </div>
+          `;
+        }
+
+        // OWNER: ADD/REMOVE MONEY
+        if(page === 'manageWallet' && userData.role === 'owner') {
+          html = `
+            <h1 class="text-3xl font-bold mb-4">Dépôt / Retrait Portefeuille</h1>
+            <div class="bg-white p-6 rounded-xl">
+              <select id="userSelect" class="border w-full p-3 mb-3 rounded"><option>Chargement...</option></select>
+              <input id="amount" type="number" placeholder="Montant GNF" class="border w-full p-3 mb-3 rounded">
+              <button onclick="addMoney()" class="bg-green-500 text-white px-6 py-3 rounded-lg mr-2">+ Dépôt</button>
+              <button onclick="removeMoney()" class="bg-red-500 text-white px-6 py-3 rounded-lg">- Retrait</button>
+            </div>
+          `;
+          setTimeout(loadUsersForSelect, 100);
+        }
+
+        // OWNER: SEND MONEY LIKE ORANGE MONEY
+        if(page === 'sendMoney' && userData.role === 'owner') {
+          html = `
+            <h1 class="text-3xl font-bold mb-4">Envoi d'Argent Instantané</h1>
+            <div class="bg-white p-6 rounded-xl">
+              <select id="sendType" class="border w-full p-3 mb-3 rounded">
+                <option value="apex">Portefeuille Apex</option>
+                <option value="orange">Orange Money</option>
+                <option value="mtn">MTN MoMo</option>
+                <option value="wave">Wave</option>
+                <option value="bank">Compte Bancaire</option>
+              </select>
+              <input id="sendNumber" placeholder="Numéro ou Compte" class="border w-full p-3 mb-3 rounded">
+              <input id="sendAmount" type="number" placeholder="Montant GNF" class="border w-full p-3 mb-3 rounded">
+              <button onclick="sendMoney()" class="btn-orange text-white px-6 py-3 rounded-lg">Envoyer Maintenant</button>
+            </div>
+          `;
+        }
+
+        if(page === 'allUsers' && userData.role === 'owner') {
+          html = `<h1 class="text-3xl font-bold mb-4">Tous les Utilisateurs</h1><div id="allUsersList"></div>`;
+          setTimeout(loadAllUsers, 100);
+        }
+
+        document.getElementById('mainContent').innerHTML = html;
+      }
+
+      // ADD THIS FUNCTION TOO - FOR SHOW PASSWORD IN REGISTER FORM
+      window.toggleNewPass = () => { 
+        document.getElementById('newPass').type = document.getElementById('newPass').type === 'password' ? 'text' : 'password' 
+           }
