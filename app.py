@@ -49,3 +49,46 @@ def success():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+from flask import Flask, request, jsonify
+import os
+
+app = Flask(__name__)
+API_SECRET = os.getenv("API_SECRET", "ApexSecret2026")
+
+def check_auth():
+    return request.headers.get("Authorization") == f"Bearer {API_SECRET}"
+
+@app.route("/")
+def home():
+    return jsonify({"status": "Apex Money API Running ✅"})
+
+# 1. KYC
+@app.route("/kyc-check", methods=["POST"])
+def kyc():
+    if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
+    print("KYC:", request.json)
+    return jsonify({"status": "success", "verified": True})
+
+# 2. SMS
+@app.route("/send-sms", methods=["POST"])
+def sms():
+    if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
+    print("SMS:", request.json)
+    return jsonify({"status": "sent"})
+
+# 3. WHATSAPP
+@app.route("/send-whatsapp", methods=["POST"])
+def whatsapp():
+    if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
+    print("WhatsApp:", request.json)
+    return jsonify({"status": "sent"})
+
+# 4. SEND MONEY
+@app.route("/send-money", methods=["POST"])
+def send_money():
+    if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
+    print("Send Money:", request.json)
+    return jsonify({"status": "success", "transactionId": f"TXN{int(time.time())}"})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
