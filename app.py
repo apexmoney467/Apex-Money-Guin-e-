@@ -1,4 +1,5 @@
-
+import sqlite3
+from datetime import datetime
 from flask import Flask, request, jsonify, render_template
 import requests
 import os
@@ -16,7 +17,96 @@ def home():
 
 @app.route('/api/payment', methods=['POST'])
 def payment():
+    d# DATABASE SETUP
+def get_db():
+    conn = sqlite3.connect('apex.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.before_first_request
+def init_db():
+    db = get_db()
+    db.execute('''CREATE TABLE IF NOT EXISTS users
+        (id INTEGER PRIMARY KEY, nom TEXT, phone TEXT UNIQUE, password TEXT, role TEXT DEFAULT 'user', balance REAL DEFAULT 0)''')
+    db.execute('''CREATE TABLE IF NOT EXISTS transactions
+        (id INTEGER PRIMARY KEY, type TEXT, amount REAL, platform TEXT, user_phone TEXT, agent_phone TEXT, created_at TEXT)''')
+    db.commit()
+
+
+# AUTH ROUTES
+@app.route('/api/auth/register', methods=['POST'])
+def register():
     data = request.json
+    db = get_db()
+    try:
+        db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?)",
+                   (data['nom'], data['phone'], data['password'], data.get('role','user')))
+        db.commit()
+        return jsonify({"success": True, "message": "User registered"})
+    except:
+        return jsonify({"success": False, "message": "Phone already exists"}), 400
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    data = request.json
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE phone=? AND password=?", 
+                      (data['phone'], data['password'])).fetchone()
+    if user:
+        return jsonify({"success": True, "user": dict(user)})
+    return jsonify({"success": False, "message": "Invalid credentials"}), 401
+
+
+# OWNER ROUTE - SERVES THE HTML PAGE
+@app.route('/owner')
+def owner():
+    return render_template('Owner.html')
+
+
+# AGENT TRANSACTION - DEPOSIT / RETRAIT
+@app.route('/api/agent/transaction', methods=['POST'])
+def agent_transaction():
+    data = request.json
+    db = get_db()
+    
+    # Check user exists
+    user = db.execute("SELECT * FROM users WHERE phone=?", (data['userPhone'],)).fetchone()
+    if not user:
+        return jsonify({"success": False, "message": "User not found"}), 404
+
+    # Update balance
+    if data['type'] == 'agent_deposit':
+        db.execute("UPDATE users SET balance = balance + ? WHERE phone=?", (data['amount'], data['userPhone']))
+    if data['type'] == 'agent_withdraw':
+        db.execute("UPDATE users SET balance = balance - ? WHERE phone=?", (data['amount'], data['userPhone']))
+    
+    # Save transaction
+    db.execute("INSERT INTO transactions (type, amount, platform, user_phone, agent_phone, created_at) VALUES (?, ?, ?)",
+               (data['type'], data['amount'], data['platform'], data['userPhone'], data.get('agentPhone','OWNER'), datetime.now()))
+    db.commit()
+    return jsonify({"success": True, "message": "Transaction completed"})
+
+
+# OWNER DASHBOARD DATA
+@app.route('/api/owner/dashboard', methods=['GET'])
+def owner_dashboard():
+    db = get_db()
+    users = db.execute("SELECT COUNT(*) as c FROM users WHERE role='user'").fetchone()['c']
+    agents = db.execute("SELECT COUNT(*) as c FROM users WHERE role='agent'").fetchone()['c']
+    txs = db.execute("SELECT * FROM transactions ORDER BY created_at DESC LIMIT 50").fetchall()
+    return jsonify({
+        "totalUsers": users,
+        "totalAgents": agents,
+        "recentTransactions": [dict(t) for t in txs]
+    })
+
+
+# GET ALL USERS FOR OWNER
+@app.route('/api/owner/users', methods=['GET'])
+def owner_users():
+    db = get_db()
+    users = db.execute("SELECT * FROM users").fetchall()
+    return jsonify([dict(u) for u in users])ata = request.json
     total_amount = data['amount']
     
     payload = {
@@ -29,14 +119,7 @@ def payment():
         "return_url": "https://apex-money-guin-e-1.onrender.com/success",
         "cpm_version": "V2"
     }
-    
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {API_KEY}"
-    }
-    
-    res = requests.post("https://api-checkout.cinetpay.com/v2/payment", json=payload, headers=headers)
-    return jsonify(res.json())
+   
 
 @app.route('/api/notify', methods=['POST'])
 def notify():
@@ -45,14 +128,59 @@ def notify():
 
 @app.route('/success')
 def success():
-    return "Paiement reussi! Merci"
+    return "Paiement reussi! Merc@app.route('/owner')
+def owner():
+    return render_template('Owner.html')
+
+# AGENT TRANSACTION ENDPOINT
+@app.route('/api/agent/transaction', methods=['POST'])
+def agent_transaction():
+    data = request.json
+    db = get_db()
+    
+    # Update user balance
+    if data['type'] == 'agent_deposit':
+        db.execute("UPDATE users SET balance = balance + ? WHERE phone=?", (data['amount'], data['userPhone']))
+    if data['type'] == 'agent_withdraw':
+        db.execute("UPDATE users SET balance = balance - ? WHERE phone=?", (data['amount'], data['userPhone']))
+    
+    # Log transaction
+    db.execute("INSERT INTO transactions (type, amount, platform, user_phone, agent_phone, created_at) VALUES (?, ?, ?)",
+               (data['type'], data['amount'], data['platform'], data['userPhone'], data.get('agentPhone','OWNER'), datetime.now()))
+    db.commit()
+    return jsonify({"success": True, "message": "Transaction completed"})
+
+# OWNER DASHBOARD DATA
+@app.route('/api/owner/dashboard', methods=['GET'])
+def owner_dashboard():
+    db = get_db()
+    users = db.execute("SELECT COUNT(*) as c FROM users WHERE role='user'").fetchone()['c']
+    agents = db.execute("SELECT COUNT(*) as c FROM users WHERE role='agent'").fetchone()['c']
+    txs = db.execute("SELECT * FROM transactions ORDER BY created_at DESC LIMIT 20").fetchall()
+    return jsonify({
+        "totalUsers": users,
+        "totalAgents": agents,
+        "recentTransactions": [dict(t) for t in txs]
+    })i"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
 from flask import Flask, request, jsonify
 import os
 
-app = Flask(__name__)
+app = Flask(__name__) def get_db():
+    conn = sqlite3.connect('apex.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.before_first_request
+def init_db():
+    db = get_db()
+    db.execute('''CREATE TABLE IF NOT EXISTS users
+        (id INTEGER PRIMARY KEY, nom TEXT, phone TEXT UNIQUE, password TEXT, role TEXT, balance REAL)''')
+    db.execute('''CREATE TABLE IF NOT EXISTS transactions
+        (id INTEGER PRIMARY KEY, type TEXT, amount REAL, platform TEXT, user_phone TEXT, agent_phone TEXT, created_at TEXT)''')
+    db.commit()
 API_SECRET = os.getenv("API_SECRET", "ApexSecret2026")
 
 def check_auth():
