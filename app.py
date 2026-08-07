@@ -41,6 +41,7 @@ def register():
     try:
         db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?)",
                    (data['nom'], data['phone'], data['password'], data.get('role','user')))
+                   
         db.commit()
         return jsonify({"success": True, "message": "User registered"})
     except:
@@ -61,7 +62,40 @@ def login():
 @app.route('/owner')
 def owner():
     return render_template('Owner.html')
+@app.route('/success')
+def success():
+    return "Paiement reussi! Merci"
 
+@app.route('/api/agent/transaction', methods=['POST'])
+def agent_transaction():
+    data = request.json
+    db = get_db()
+    
+    user = db.execute("SELECT * FROM users WHERE phone=?", (data['userPhone'],)).fetchone()
+    if not user:
+        return jsonify({"success": False, "message": "User not found"}), 404
+
+    if data['type'] == 'agent_deposit':
+        db.execute("UPDATE users SET balance = balance + ? WHERE phone=?", (data['amount'], data['userPhone']))
+    if data['type'] == 'agent_withdraw':
+        db.execute("UPDATE users SET balance = balance - ? WHERE phone=?", (data['amount'], data['userPhone']))
+    
+    db.execute("INSERT INTO transactions (type, amount, platform, user_phone, agent_phone, created_at) VALUES (?, ?, ?)",
+               (data['type'], data['amount'], data['platform'], data['userPhone'], data.get('agentPhone','OWNER'), datetime.now()))
+    db.commit()
+    return jsonify({"success": True, "message": "Transaction completed"})
+
+@app.route('/api/owner/dashboard', methods=['GET'])
+def owner_dashboard():
+    db = get_db()
+    users = db.execute("SELECT COUNT(*) as c FROM users WHERE role='user'").fetchone()['c']
+    agents = db.execute("SELECT COUNT(*) as c FROM users WHERE role='agent'").fetchone()['c']
+    txs = db.execute("SELECT * FROM transactions ORDER BY created_at DESC LIMIT 50").fetchall()
+    return jsonify({
+        "totalUsers": users,
+        "totalAgents": agents,
+        "recentTransactions": [dict(t) for t in txs]
+    })
 
 # AGENT TRANSACTION - DEPOSIT / RETRAIT
 @app.route('/api/agent/transaction', methods=['POST'])
@@ -128,7 +162,9 @@ def notify():
 
 @app.route('/success')
 def success():
-    return "Paiement reussi! Merc@app.route('/owner')
+    return "Paiement reussi! Merci"
+
+@app.route('/owner')
 def owner():
     return render_template('Owner.html')
 
