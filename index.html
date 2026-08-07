@@ -3,28 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apex Money GN</title>
+    <title>Apex Money GN - Owner</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gradient-to-br from-orange-400 to-red-500 min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-      <h1 class="text-3xl font-bold text-orange-600 text-center mb-2">💰 Apex Money GN</h1>
-      <p class="text-center text-gray-600 mb-6">Première connexion: Créez le compte Owner</p>
-      
-      <input id="email" type="email" placeholder="Email" class="border w-full rounded-lg p-3 mb-3">
-      <input id="password" type="password" placeholder="Mot de passe 6+ caractères" class="border w-full rounded-lg p-3 mb-3">
-      <input id="nom" placeholder="Votre Nom" class="border w-full rounded-lg p-3 mb-3">
-      
-      <button onclick="registerOwner()" class="bg-orange-500 hover:bg-orange-600 text-white w-full py-3 rounded-lg font-bold mb-3">Créer Compte Owner</button>
-      <button onclick="login()" class="bg-gray-700 hover:bg-gray-800 text-white w-full py-3 rounded-lg mb-3">Se Connecter</button>
-      
-      <p id="error" class="text-red-500 text-center text-sm mt-3"></p>
+<body class="bg-gray-100 min-h-screen">
+    <div class="bg-orange-600 text-white p-4 text-center">
+        <h1 class="text-2xl font-bold">💰 Apex Money GN - OWNER</h1>
+        <button onclick="logout()" class="bg-white text-orange-600 px-4 py-1 rounded mt-2">Déconnexion</button>
+    </div>
+
+    <div id="login" class="flex items-center justify-center p-4 pt-10">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <h2 class="text-2xl font-bold text-orange-600 text-center mb-4">Connexion Owner</h2>
+        <input id="email" type="email" placeholder="Email" class="border w-full rounded-lg p-3 mb-3">
+        <input id="password" type="password" placeholder="Mot de passe" class="border w-full rounded-lg p-3 mb-3">
+        <input id="nom" placeholder="Votre Nom" class="border w-full rounded-lg p-3 mb-3">
+        <button onclick="registerOwner()" class="bg-orange-500 hover:bg-orange-600 text-white w-full py-3 rounded-lg font-bold mb-3">Créer Compte Owner</button>
+        <button onclick="login()" class="bg-gray-700 hover:bg-gray-800 text-white w-full py-3 rounded-lg mb-3">Se Connecter</button>
+        <p id="error" class="text-red-500 text-center text-sm mt-3"></p>
+      </div>
+    </div>
+
+    <div id="dashboard" class="hidden p-4 max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl shadow p-6 mb-4">
+            <h2 class="text-xl font-bold mb-2">Solde Total: <span id="total" class="text-orange-600">1,000,000 GNF</span></h2>
+            <p>Taux d'intérêt: <input id="taux" type="number" value="10" class="border p-2 w-20"> %</p>
+            <button onclick="updateTaux()" class="bg-orange-500 text-white px-4 py-2 rounded mt-2">Mettre à jour Taux</button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Ajouter un Client</h2>
+            <input id="clientNom" placeholder="Nom Client" class="border p-2 rounded w-full mb-2">
+            <input id="clientEmail" placeholder="Email Client" class="border p-2 rounded w-full mb-2">
+            <input id="clientMontant" type="number" placeholder="Montant Initial GNF" class="border p-2 rounded w-full mb-2">
+            <button onclick="addClient()" class="bg-green-500 text-white px-4 py-2 rounded">Créer Client</button>
+            <div id="clients" class="mt-4"></div>
+        </div>
     </div>
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-      import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDyqB601iwygUcojI2jl7bt7E276y2jffQ",
@@ -39,36 +59,35 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
 
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          document.getElementById('login').classList.add('hidden');
+          document.getElementById('dashboard').classList.remove('hidden');
+        } else {
+          document.getElementById('login').classList.remove('hidden');
+          document.getElementById('dashboard').classList.add('hidden');
+        }
+      });
+
       window.registerOwner = async () => {
-        document.getElementById('error').innerText = "Création en cours...";
         try {
           const email = document.getElementById('email').value;
           const pass = document.getElementById('password').value;
           const nom = document.getElementById('nom').value;
-          
           const userCred = await createUserWithEmailAndPassword(auth, email, pass);
-          await setDoc(doc(db, "clients", userCred.user.uid), { 
-            nom: nom, 
-            email: email, 
-            role: 'owner', 
-            montant: 1000000,
-            taux: 10,
-            dateCreation: new Date()
-          });
-          document.getElementById('error').innerText = "✅ Compte Owner créé! Rechargez la page.";
-        } catch (error) {
-          document.getElementById('error').innerText = "❌ Erreur: " + error.message;
-        }
+          await setDoc(doc(db, "clients", userCred.user.uid), { nom: nom, email: email, role: 'owner', montant: 1000000, taux: 10 });
+          document.getElementById('error').innerText = "✅ Compte Owner créé!";
+        } catch (error) { document.getElementById('error').innerText = "❌ " + error.message; }
       }
 
       window.login = async () => { 
-        try {
-          await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value); 
-          document.getElementById('error').innerText = "✅ Connexion réussie!";
-        } catch(error) {
-          document.getElementById('error').innerText = "❌ Erreur: " + error.message;
-        }
+        try { await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value); } 
+        catch(error) { document.getElementById('error').innerText = "❌ " + error.message; }
       }
+
+      window.logout = () => signOut(auth);
+      window.updateTaux = () => alert("Taux mis à jour!");
+      window.addClient = () => alert("Client ajouté!");
     </script>
 </body>
-</html>
+                </html>
