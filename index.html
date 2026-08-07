@@ -172,7 +172,51 @@
         });
         document.getElementById('clients').innerHTML = html;
       }
+const express = require("express");
+const app = express();
+app.use(express.json());
 
+const API_SECRET = "ApexSecret2026"; // Change this
+
+// Middleware to check API key
+function checkAuth(req, res, next) {
+  if(req.headers.authorization === `Bearer ${API_SECRET}`) next();
+  else res.status(401).json({error: "Unauthorized"})
+}
+
+// 1. KYC CHECK
+app.post("/kyc-check", checkAuth, async (req, res) => {
+  const {name, email, phone} = req.body;
+  console.log("KYC for:", name)
+  // Here you call your KYC provider or just save to DB
+  res.json({status: "ok", message: "KYC passed"})
+})
+
+// 2. SEND SMS
+app.post("/send-sms", checkAuth, async (req, res) => {
+  const {phone, message} = req.body;
+  console.log("SMS to:", phone, message)
+  // Here you call Orange SMS API, Twilio, etc
+  res.json({status: "sent"})
+})
+
+// 3. SEND WHATSAPP
+app.post("/send-whatsapp", checkAuth, async (req, res) => {
+  const {to, message} = req.body;
+  console.log("WhatsApp to:", to, message)
+  // Here you call WhatsApp Business API
+  res.json({status: "sent"})
+})
+
+// 4. SEND MONEY
+app.post("/send-money", checkAuth, async (req, res) => {
+  const {phone, amount, network} = req.body;
+  console.log("Sending", amount, "to", phone, "via", network)
+  // Here you call Orange Money / MTN MoMo API
+  res.json({status: "success", transactionId: "TXN"+Date.now()})
+})
+
+app.listen(10000, () => console.log("API Running"))
       window.demandeRetrait = async () => {
         const montant = parseFloat(document.getElementById('montantRetrait').value);
         await addDoc(collection(db, "retraits"), {
