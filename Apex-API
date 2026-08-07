@@ -1,0 +1,92 @@
+git init
+git add .
+git commit -m "Apex API v1"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/apex-api.git
+git push -u origin mainconst express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const API_SECRET = process.env.API_SECRET;
+
+function checkAuth(req, res, next) {
+  const auth = req.headers.authorization;
+  if(auth === `Bearer ${API_SECRET}`) next();
+  else res.status(401).json({error: "Unauthorized"})
+}
+
+app.get("/", (req, res) => res.json({status: "Apex Money API Running ✅"}))
+
+// 1. KYC
+app.post("/kyc-check", checkAuth, (req, res) => {
+  console.log("KYC:", req.body)
+  res.json({status: "success", verified: true})
+})
+
+// 2. SMS
+app.post("/send-sms", checkAuth, (req, res) => {
+  console.log("SMS:", req.body)
+  res.json({status: "sent"})
+})
+
+// 3. WHATSAPP
+app.post("/send-whatsapp", checkAuth, (req, res) => {
+  console.log("WhatsApp:", req.body)
+  res.json({status: "sent"})
+})
+
+// 4. SEND MONEY
+app.post("/send-money", checkAuth, (req, res) => {
+  console.log("Send Money:", req.body)
+  res.json({status: "success", transactionId: "TXN"+Date.now()})
+})
+
+app.listen(process.env.PORT || 10000, () => console.log("API Running"));PORT=10000
+API_SECRET=ApexSecret2026const express = require("express");
+const app = express();
+app.use(express.json());
+
+const API_SECRET = "ApexSecret2026"; // Change this
+
+// Middleware to check API key
+function checkAuth(req, res, next) {
+  if(req.headers.authorization === `Bearer ${API_SECRET}`) next();
+  else res.status(401).json({error: "Unauthorized"})
+}
+
+// 1. KYC CHECK
+app.post("/kyc-check", checkAuth, async (req, res) => {
+  const {name, email, phone} = req.body;
+  console.log("KYC for:", name)
+  // Here you call your KYC provider or just save to DB
+  res.json({status: "ok", message: "KYC passed"})
+})
+
+// 2. SEND SMS
+app.post("/send-sms", checkAuth, async (req, res) => {
+  const {phone, message} = req.body;
+  console.log("SMS to:", phone, message)
+  // Here you call Orange SMS API, Twilio, etc
+  res.json({status: "sent"})
+})
+
+// 3. SEND WHATSAPP
+app.post("/send-whatsapp", checkAuth, async (req, res) => {
+  const {to, message} = req.body;
+  console.log("WhatsApp to:", to, message)
+  // Here you call WhatsApp Business API
+  res.json({status: "sent"})
+})
+
+// 4. SEND MONEY
+app.post("/send-money", checkAuth, async (req, res) => {
+  const {phone, amount, network} = req.body;
+  console.log("Sending", amount, "to", phone, "via", network)
+  // Here you call Orange Money / MTN MoMo API
+  res.json({status: "success", transactionId: "TXN"+Date.now()})
+})
+
+app.listen(10000, () => console.log("API Running"))
