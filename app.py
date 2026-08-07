@@ -191,20 +191,22 @@ def agent_transaction():
 def owner_dashboard():
     db = get_db()
     users = db.execute("SELECT COUNT(*) as c FROM users WHERE role='user'").fetchone()['c']
-    agents = db.execute("SELECT COUNT(*) as c FROM users WHERE role='agent'").fetchone()['c']
-    txs = db.execute("SELECT * FROM transactions ORDER BY created_at DESC LIMIT 20").fetchall()
-    return jsonify({
-        "totalUsers": users,
-        "totalAgents": agents,
-        "recentTransactions": [dict(t) for t in txs]
-    })i"
+    
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-from flask import Flask, request, jsonify
-import os
 
-app = Flask(__name__) def get_db():
+
+app = Flask(__name__, template_folder='.')
+
+def owner_dashboard():
+    agents = db.execute("SELECT COUNT(*) as c FROM users WHERE role='agent'").fetchone()['c']
+txs = db.execute("SELECT * FROM transactions ORDER BY created_at DESC LIMIT 50").fetchall()
+ return jsonify({
+     "totalUsers": users,
+     "totalAgents": agents,
+     "recentTransactions": [dict(t) for t in txs]
+ })me__) 
     conn = sqlite3.connect('apex.db')
     conn.row_factory = sqlite3.Row
     return conn
