@@ -3,28 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apex Money GN - Owner</title>
+    <title>Apex Money GN</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen">
     <div class="bg-orange-600 text-white p-4 text-center">
-        <h1 class="text-2xl font-bold">💰 Apex Money GN - OWNER</h1>
-        <button onclick="logout()" class="bg-white text-orange-600 px-4 py-1 rounded mt-2">Déconnexion</button>
+        <h1 class="text-2xl font-bold">💰 Apex Money GN</h1>
+        <button onclick="logout()" class="bg-white text-orange-600 px-4 py-1 rounded mt-2 hidden" id="btnLogout">Déconnexion</button>
     </div>
 
+    <!-- LOGIN -->
     <div id="login" class="flex items-center justify-center p-4 pt-10">
       <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <h2 class="text-2xl font-bold text-orange-600 text-center mb-4">Connexion Owner</h2>
+        <h2 class="text-2xl font-bold text-orange-600 text-center mb-4">Connexion</h2>
         <input id="email" type="email" placeholder="Email" class="border w-full rounded-lg p-3 mb-3">
         <input id="password" type="password" placeholder="Mot de passe" class="border w-full rounded-lg p-3 mb-3">
-        <input id="nom" placeholder="Votre Nom" class="border w-full rounded-lg p-3 mb-3">
+        <input id="nom" placeholder="Nom (pour Owner)" class="border w-full rounded-lg p-3 mb-3">
         <button onclick="registerOwner()" class="bg-orange-500 hover:bg-orange-600 text-white w-full py-3 rounded-lg font-bold mb-3">Créer Compte Owner</button>
         <button onclick="login()" class="bg-gray-700 hover:bg-gray-800 text-white w-full py-3 rounded-lg mb-3">Se Connecter</button>
         <p id="error" class="text-red-500 text-center text-sm mt-3"></p>
       </div>
     </div>
 
-    <div id="dashboard" class="hidden p-4 max-w-4xl mx-auto">
+    <!-- OWNER DASHBOARD -->
+    <div id="ownerDash" class="hidden p-4 max-w-4xl mx-auto">
+        <h2 class="text-xl font-bold mb-4 text-orange-600">Mode: OWNER</h2>
         <div class="bg-white rounded-xl shadow p-6 mb-4">
             <h2 class="text-xl font-bold mb-2">Solde Total: <span id="total" class="text-orange-600">Chargement...</span> GNF</h2>
             <p>Taux d'intérêt: <input id="taux" type="number" value="10" class="border p-2 w-20"> %</p>
@@ -36,6 +39,7 @@
             <h2 class="text-xl font-bold mb-4">Ajouter un Client</h2>
             <input id="clientNom" placeholder="Nom Client" class="border p-2 rounded w-full mb-2">
             <input id="clientEmail" placeholder="Email Client" class="border p-2 rounded w-full mb-2">
+            <input id="clientPassword" placeholder="Mot de passe Client" class="border p-2 rounded w-full mb-2">
             <input id="clientMontant" type="number" placeholder="Montant Initial GNF" class="border p-2 rounded w-full mb-2">
             <button onclick="addClient()" class="bg-green-500 text-white px-4 py-2 rounded">Créer Client</button>
             <p id="msgClient" class="text-green-600 text-sm mt-2"></p>
@@ -43,10 +47,28 @@
         </div>
     </div>
 
+    <!-- CLIENT DASHBOARD -->
+    <div id="clientDash" class="hidden p-4 max-w-2xl mx-auto">
+        <h2 class="text-xl font-bold mb-4 text-orange-600">Mode: CLIENT</h2>
+        <div class="bg-white rounded-xl shadow p-6 mb-4">
+            <h2 class="text-lg">Bienvenue <span id="clientNomAffiche"></span></h2>
+            <h2 class="text-2xl font-bold mt-2">Votre Solde: <span id="clientSolde" class="text-green-600">0</span> GNF</h2>
+            <p>Taux actuel: <span id="clientTaux">10</span>%</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Demande de Retrait</h2>
+            <input id="montantRetrait" type="number" placeholder="Montant à retirer GNF" class="border p-2 rounded w-full mb-2">
+            <button onclick="demandeRetrait()" class="bg-red-500 text-white px-4 py-2 rounded">Demander Retrait</button>
+            <p id="msgRetrait" class="text-sm mt-2"></p>
+            <div id="historique" class="mt-4"></div>
+        </div>
+    </div>
+
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-      import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDyqB601iwygUcojI2jl7bt7E276y2jffQ",
@@ -61,27 +83,45 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
       let currentUser = null;
+      let userRole = null;
 
       onAuthStateChanged(auth, async (user) => {
         if (user) {
           currentUser = user;
-          document.getElementById('login').classList.add('hidden');
-          document.getElementById('dashboard').classList.remove('hidden');
-          loadData();
+          const docSnap = await getDoc(doc(db, "clients", user.uid));
+          if (docSnap.exists()) {
+            userRole = docSnap.data().role;
+            document.getElementById('login').classList.add('hidden');
+            document.getElementById('btnLogout').classList.remove('hidden');
+            if(userRole === 'owner') {
+              document.getElementById('ownerDash').classList.remove('hidden');
+              loadOwnerData();
+            } else {
+              document.getElementById('clientDash').classList.remove('hidden');
+              loadClientData();
+            }
+          }
         } else {
           document.getElementById('login').classList.remove('hidden');
-          document.getElementById('dashboard').classList.add('hidden');
+          document.getElementById('ownerDash').classList.add('hidden');
+          document.getElementById('clientDash').classList.add('hidden');
+          document.getElementById('btnLogout').classList.add('hidden');
         }
       });
 
-      async function loadData() {
-        const docRef = doc(db, "clients", currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          document.getElementById('total').innerText = docSnap.data().montant.toLocaleString();
-          document.getElementById('taux').value = docSnap.data().taux;
-        }
+      async function loadOwnerData() {
+        const docSnap = await getDoc(doc(db, "clients", currentUser.uid));
+        document.getElementById('total').innerText = docSnap.data().montant.toLocaleString();
+        document.getElementById('taux').value = docSnap.data().taux;
         loadClients();
+      }
+
+      async function loadClientData() {
+        const docSnap = await getDoc(doc(db, "clients", currentUser.uid));
+        const data = docSnap.data();
+        document.getElementById('clientNomAffiche').innerText = data.nom;
+        document.getElementById('clientSolde').innerText = data.montant.toLocaleString();
+        document.getElementById('clientTaux').innerText = data.taux || 10;
       }
 
       window.registerOwner = async () => {
@@ -111,20 +151,14 @@
       window.addClient = async () => {
         const nom = document.getElementById('clientNom').value;
         const email = document.getElementById('clientEmail').value;
+        const pass = document.getElementById('clientPassword').value;
         const montant = parseFloat(document.getElementById('clientMontant').value);
-        const clientId = "client_" + Date.now();
-        await setDoc(doc(db, "clients", clientId), { 
-          nom: nom, 
-          email: email, 
-          role: 'client', 
-          montant: montant, 
-          ownerId: currentUser.uid,
-          date: new Date()
+        
+        const userCred = await createUserWithEmailAndPassword(auth, email, pass);
+        await setDoc(doc(db, "clients", userCred.user.uid), { 
+          nom: nom, email: email, role: 'client', montant: montant, ownerId: currentUser.uid, taux: 10
         });
-        document.getElementById('msgClient').innerText = "✅ Client " + nom + " ajouté!";
-        document.getElementById('clientNom').value = '';
-        document.getElementById('clientEmail').value = '';
-        document.getElementById('clientMontant').value = '';
+        document.getElementById('msgClient').innerText = "✅ Client " + nom + " créé! Password: " + pass;
         loadClients();
       }
 
@@ -138,6 +172,17 @@
         });
         document.getElementById('clients').innerHTML = html;
       }
+
+      window.demandeRetrait = async () => {
+        const montant = parseFloat(document.getElementById('montantRetrait').value);
+        await addDoc(collection(db, "retraits"), {
+          clientId: currentUser.uid,
+          montant: montant,
+          statut: 'en attente',
+          date: new Date()
+        });
+        document.getElementById('msgRetrait').innerText = "✅ Demande de " + montant + " GNF envoyée! En attente validation Owner.";
+      }
     </script>
 </body>
-                </html>
+    </html>
