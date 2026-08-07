@@ -26,9 +26,10 @@
 
     <div id="dashboard" class="hidden p-4 max-w-4xl mx-auto">
         <div class="bg-white rounded-xl shadow p-6 mb-4">
-            <h2 class="text-xl font-bold mb-2">Solde Total: <span id="total" class="text-orange-600">1,000,000 GNF</span></h2>
+            <h2 class="text-xl font-bold mb-2">Solde Total: <span id="total" class="text-orange-600">Chargement...</span> GNF</h2>
             <p>Taux d'intérêt: <input id="taux" type="number" value="10" class="border p-2 w-20"> %</p>
             <button onclick="updateTaux()" class="bg-orange-500 text-white px-4 py-2 rounded mt-2">Mettre à jour Taux</button>
+            <p id="msgTaux" class="text-green-600 text-sm mt-2"></p>
         </div>
 
         <div class="bg-white rounded-xl shadow p-6">
@@ -37,6 +38,7 @@
             <input id="clientEmail" placeholder="Email Client" class="border p-2 rounded w-full mb-2">
             <input id="clientMontant" type="number" placeholder="Montant Initial GNF" class="border p-2 rounded w-full mb-2">
             <button onclick="addClient()" class="bg-green-500 text-white px-4 py-2 rounded">Créer Client</button>
+            <p id="msgClient" class="text-green-600 text-sm mt-2"></p>
             <div id="clients" class="mt-4"></div>
         </div>
     </div>
@@ -44,7 +46,7 @@
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-      import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDyqB601iwygUcojI2jl7bt7E276y2jffQ",
@@ -58,16 +60,29 @@
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
       const db = getFirestore(app);
+      let currentUser = null;
 
-      onAuthStateChanged(auth, (user) => {
+      onAuthStateChanged(auth, async (user) => {
         if (user) {
+          currentUser = user;
           document.getElementById('login').classList.add('hidden');
           document.getElementById('dashboard').classList.remove('hidden');
+          loadData();
         } else {
           document.getElementById('login').classList.remove('hidden');
           document.getElementById('dashboard').classList.add('hidden');
         }
       });
+
+      async function loadData() {
+        const docRef = doc(db, "clients", currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          document.getElementById('total').innerText = docSnap.data().montant.toLocaleString();
+          document.getElementById('taux').value = docSnap.data().taux;
+        }
+        loadClients();
+      }
 
       window.registerOwner = async () => {
         try {
@@ -86,8 +101,43 @@
       }
 
       window.logout = () => signOut(auth);
-      window.updateTaux = () => alert("Taux mis à jour!");
-      window.addClient = () => alert("Client ajouté!");
+      
+      window.updateTaux = async () => {
+        const newTaux = parseFloat(document.getElementById('taux').value);
+        await updateDoc(doc(db, "clients", currentUser.uid), { taux: newTaux });
+        document.getElementById('msgTaux').innerText = "✅ Taux mis à jour à " + newTaux + "%";
+      }
+
+      window.addClient = async () => {
+        const nom = document.getElementById('clientNom').value;
+        const email = document.getElementById('clientEmail').value;
+        const montant = parseFloat(document.getElementById('clientMontant').value);
+        const clientId = "client_" + Date.now();
+        await setDoc(doc(db, "clients", clientId), { 
+          nom: nom, 
+          email: email, 
+          role: 'client', 
+          montant: montant, 
+          ownerId: currentUser.uid,
+          date: new Date()
+        });
+        document.getElementById('msgClient').innerText = "✅ Client " + nom + " ajouté!";
+        document.getElementById('clientNom').value = '';
+        document.getElementById('clientEmail').value = '';
+        document.getElementById('clientMontant').value = '';
+        loadClients();
+      }
+
+      async function loadClients() {
+        const querySnapshot = await getDocs(collection(db, "clients"));
+        let html = '<h3 class="font-bold mt-4">Liste Clients:</h3>';
+        querySnapshot.forEach((doc) => {
+          if(doc.data().ownerId === currentUser.uid) {
+            html += `<div class="border p-2 rounded mt-2">${doc.data().nom} - ${doc.data().montant.toLocaleString()} GNF</div>`
+          }
+        });
+        document.getElementById('clients').innerHTML = html;
+      }
     </script>
 </body>
                 </html>
