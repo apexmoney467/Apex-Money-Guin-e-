@@ -39,18 +39,18 @@ def register():
     data = request.json
     db = get_db()
      try:
-db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?)",
+db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?, ?)",
 except:
     return jsonify({"success": False, "message": "Phone already exists"}), 400
-@app.route('/api/auth/register', methods=['POST'])
-def register():
+@app.route('/api/auth/login', methods=['POST'])
+def login():
     data = request.json
     db = get_db()
-    try:
-        db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?)",
-                   (data['nom'], data['phone'], data['password'], data.get('role','user')))
-        db.commit()
-        return jsonify({"success": True, "message": "User registered"})
+    user = db.execute("SELECT * FROM users WHERE phone=? AND password=?",
+                      (data['phone'], data['password'])).fetchone()
+    if user:
+        return jsonify({"success": True, "user": dict(user)})
+    return jsonify({"success": False, "message": "Invalid credentials"}), 401
     except:
         return jsonify({"success": False, "message": "Phone already exists"}), 400
 
