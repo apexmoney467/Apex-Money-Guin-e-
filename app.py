@@ -37,6 +37,7 @@ def init_db():
 @app.route('/api/auth/register', methods=['POST'])
 def register():
     data = request.json
+    db = get_db()
     try:
         db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?, ?)",
                    (data['nom'], data['phone'], data['password'], data.get('role','user')))
