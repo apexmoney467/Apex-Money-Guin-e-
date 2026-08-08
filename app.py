@@ -13,14 +13,10 @@ def get_db():
 def home():
     return jsonify({"status": "Apex API Running", "version": "1.0"})
 
-# AUTH
 @app.route('/api/auth/register', methods=['POST'])
 def register():
-    data = request.json    # 1 Tab
-    db = get_db()          # 1 Tab
-    try:                   # 1 Tab
-        db.execute(...)    # 2 Tabs
-    
+    data = request.json
+    db = get_db()
     try:
         db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?, ?)",
                    (data['nom'], data['phone'], data['password'], data.get('role','user')))
@@ -39,28 +35,24 @@ def login():
         return jsonify({"success": True, "user": dict(user)})
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
-# KYC
 @app.route('/kyc-check', methods=['POST'])
 def kyc_check():
     data = request.json
     print("KYC for:", data.get('name'))
     return jsonify({"status": "ok", "message": "KYC passed"})
 
-# SEND SMS
 @app.route('/send-sms', methods=['POST'])
 def send_sms():
     data = request.json
     print("SMS to:", data.get('phone'))
     return jsonify({"status": "sent"})
 
-# SEND WHATSAPP
 @app.route('/send-whatsapp', methods=['POST'])
 def send_whatsapp():
     data = request.json
     print("WhatsApp to:", data.get('to'))
     return jsonify({"status": "sent"})
 
-# SEND MONEY
 @app.route('/send-money', methods=['POST'])
 def send_money():
     data = request.json
