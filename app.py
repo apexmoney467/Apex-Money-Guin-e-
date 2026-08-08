@@ -16,8 +16,11 @@ def home():
 # AUTH
 @app.route('/api/auth/register', methods=['POST'])
 def register():
-    data = request.json
-        db = get_db()
+    data = request.json    # 1 Tab
+    db = get_db()          # 1 Tab
+    try:                   # 1 Tab
+        db.execute(...)    # 2 Tabs
+    
     try:
         db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?, ?)",
                    (data['nom'], data['phone'], data['password'], data.get('role','user')))
