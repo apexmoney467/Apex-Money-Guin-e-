@@ -17,7 +17,7 @@ def home():
 @app.route('/api/auth/register', methods=['POST'])
 def register():
     data = request.json
-    db = get_db()
+        db = get_db()
     try:
         db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?, ?)",
                    (data['nom'], data['phone'], data['password'], data.get('role','user')))
@@ -47,7 +47,7 @@ def kyc_check():
 @app.route('/send-sms', methods=['POST'])
 def send_sms():
     data = request.json
-    print("SMS to:", data.get('phone'), data.get('message'))
+    print("SMS to:", data.get('phone'))
     return jsonify({"status": "sent"})
 
 # SEND WHATSAPP
@@ -62,7 +62,7 @@ def send_whatsapp():
 def send_money():
     data = request.json
     print("Sending", data.get('amount'), "to", data.get('phone'))
-    return jsonify({"status": "success", "transactionId": "TX" + str(os.urandom(4).hex())})
+    return jsonify({"status": "success", "transactionId": "TX123"})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
