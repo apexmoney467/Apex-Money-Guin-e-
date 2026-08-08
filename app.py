@@ -3,11 +3,19 @@ import sqlite3
 import os
 
 app = Flask(__name__)
-
 def get_db():
     db = sqlite3.connect("apex.db")
     db.row_factory = sqlite3.Row
+    # Auto-create tables if they don't exist
+    db.execute('''CREATE TABLE IF NOT EXISTS users 
+        (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+         nom TEXT NOT NULL, 
+         phone TEXT UNIQUE NOT NULL, 
+         password TEXT NOT NULL, 
+         role TEXT DEFAULT 'user')''')
+    db.commit()
     return db
+
 
 @app.route('/')
 def home():
