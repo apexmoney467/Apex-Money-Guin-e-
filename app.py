@@ -38,13 +38,13 @@ def init_db():
 def register():
     data = request.json
     db = get_db()
-    try:
-db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?, ?)",
-                   (data['nom'], data['phone'], data['password'], data.get('role','user')))        
-                   db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?)",
-                   
-        db.commit()
-        return jsonify({"success": True, "message": "User registered"})
+     try:
+    db.execute("INSERT INTO users (nom, phone, password, role) VALUES (?, ?, ?)",
+               (data['nom'], data['phone'], data['password'], data.get('role','user')))
+     db.commit()
+    return jsonify({"success": True, "message": "User registered"})
+except:
+     return jsonify({"success": False, "message": "Phone already exists"}), 400
 except:
     return jsonify({"success": False, "message": "Phone already exists"}), 400
 
