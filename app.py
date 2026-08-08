@@ -55,6 +55,16 @@ def login():
     if user:
         return jsonify({"success": True, "user": dict(user)})
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    data = request.json
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE phone=? AND password=?",
+                      (data['phone'], data['password'])).fetchone()
+    if user:
+        return jsonify({"success": True, "user": dict(user)})
+    return jsonify({"success": False, "message": "Invalid credentials"}), 401
     except:
         return jsonify({"success": False, "message": "Phone already exists"}), 400
 
